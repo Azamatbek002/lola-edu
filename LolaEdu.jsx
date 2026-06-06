@@ -1,4 +1,62 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+
+// ─── SUPABASE CLIENT ──────────────────────────────────────────────────────────
+const SB_URL = 'https://oagnvwmaqfvuytsbqjqm.supabase.co';
+const SB_KEY = 'sb_publishable_PLaX_de1tIbPamWWoszrag_FzxPrD54';
+
+async function sbGet(table) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function sbInsert(table, row) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(row)
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
+async function sbUpdate(table, id, row) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(row)
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
+async function sbDelete(table, id) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
+async function sbUpsert(table, row) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(row)
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
 const STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
   :root {
@@ -1451,19 +1509,107 @@ function SettingsPage({branches}){
 export default function App(){
   const [cu,setCu]=useState(null);
   const [page,setPage]=useState("dashboard");
-  const [users,setUsers]=useState(USERS0);
-  const [branches,setBranches]=useState(BRANCHES0);
-  const [groups,setGroups]=useState(GROUPS0);
-  const [courses,setCourses]=useState(COURSES0);
-  const [attendance,setAttendance]=useState(ATTENDANCE0);
-  const [payments,setPayments]=useState(PAYMENTS0);
-  const [expenses,setExpenses]=useState(EXPENSES0);
-  const [leads,setLeads]=useState(LEADS0);
-  const [grades,setGrades]=useState(GRADES0);
-  const [salaries,setSalaries]=useState(SALARIES0);
-  const [notifications,setNotifications]=useState(NOTIFICATIONS0);
-  const [smsLog,setSmsLog]=useState(SMSLOG0);
+  const [loading,setLoading]=useState(false);
+
+  // State — dastlab demo ma'lumotlar, keyin Supabase dan yangilanadi
+  const [users,setUsersState]=useState(USERS0);
+  const [branches,setBranchesState]=useState(BRANCHES0);
+  const [groups,setGroupsState]=useState(GROUPS0);
+  const [courses,setCoursesState]=useState(COURSES0);
+  const [attendance,setAttendanceState]=useState(ATTENDANCE0);
+  const [payments,setPaymentsState]=useState(PAYMENTS0);
+  const [expenses,setExpensesState]=useState(EXPENSES0);
+  const [leads,setLeadsState]=useState(LEADS0);
+  const [grades,setGradesState]=useState(GRADES0);
+  const [salaries,setSalariesState]=useState(SALARIES0);
+  const [notifications,setNotificationsState]=useState(NOTIFICATIONS0);
+  const [smsLog,setSmsLogState]=useState(SMSLOG0);
   const [tgConfig,setTgConfig]=useState(TGCONFIG0);
+
+  // Supabase dan ma'lumotlarni yuklaymiz
+  useEffect(()=>{
+    async function load() {
+      setLoading(true);
+      const [u,b,gr,c,at,p,e,l,g,s,n,sm] = await Promise.all([
+        sbGet('users'), sbGet('branches'), sbGet('groups'), sbGet('courses'),
+        sbGet('attendance'), sbGet('payments'), sbGet('expenses'), sbGet('leads'),
+        sbGet('grades'), sbGet('salaries'), sbGet('notifications'), sbGet('sms_log')
+      ]);
+      if(u?.length) setUsersState(u);
+      if(b?.length) setBranchesState(b);
+      if(gr?.length) setGroupsState(gr.map(x=>({...x,students:Array.isArray(x.students)?x.students:(x.students?JSON.parse(x.students):[]),branchId:x.branch_id||x.branchId,teacherId:x.teacher_id||x.teacherId,courseId:x.course_id||x.courseId,startDate:x.start_date||x.startDate,endDate:x.end_date||x.endDate})));
+      if(c?.length) setCoursesState(c);
+      if(at?.length) setAttendanceState(at.map(x=>({...x,groupId:x.group_id||x.groupId,studentId:x.student_id||x.studentId})));
+      if(p?.length) setPaymentsState(p.map(x=>({...x,studentId:x.student_id||x.studentId,groupId:x.group_id||x.groupId})));
+      if(e?.length) setExpensesState(e.map(x=>({...x,branchId:x.branch_id||x.branchId})));
+      if(l?.length) setLeadsState(l.map(x=>({...x,assignedTo:x.assigned_to||x.assignedTo,branchId:x.branch_id||x.branchId})));
+      if(g?.length) setGradesState(g.map(x=>({...x,studentId:x.student_id||x.studentId,groupId:x.group_id||x.groupId,maxScore:x.max_score||x.maxScore,teacherNote:x.teacher_note||x.teacherNote})));
+      if(s?.length) setSalariesState(s.map(x=>({...x,teacherId:x.teacher_id||x.teacherId,baseAmount:x.base_amount||x.baseAmount,bonusAmount:x.bonus_amount||x.bonusAmount,branchId:x.branch_id||x.branchId})));
+      if(n?.length) setNotificationsState(n.map(x=>({...x,forRoles:Array.isArray(x.for_roles)?x.for_roles:(x.for_roles?JSON.parse(x.for_roles):x.forRoles||[])})));
+      if(sm?.length) setSmsLogState(sm.map(x=>({...x,to:x.to_phone||x.to,text:x.message||x.text})));
+      setLoading(false);
+    }
+    load();
+  },[]);
+
+  // Smart setters — state + Supabase ga birga yozadi
+  function makeSetter(table, setState, getState, mapToDb) {
+    return (fn) => {
+      setState(prev => {
+        const next = typeof fn === 'function' ? fn(prev) : fn;
+        // Qo'shilgan element
+        const added = next.find(i => !prev.find(x => x.id === i.id));
+        if(added) sbUpsert(table, mapToDb ? mapToDb(added) : added);
+        // O'zgartirilgan element
+        next.forEach(i => {
+          const old = prev.find(x => x.id === i.id);
+          if(old && JSON.stringify(old) !== JSON.stringify(i)) {
+            sbUpsert(table, mapToDb ? mapToDb(i) : i);
+          }
+        });
+        // O'chirilgan element
+        prev.forEach(i => {
+          if(!next.find(x => x.id === i.id)) sbDelete(table, i.id);
+        });
+        return next;
+      });
+    };
+  }
+
+  const setUsers = makeSetter('users', setUsersState);
+  const setBranches = makeSetter('branches', setBranchesState);
+  const setGroups = makeSetter('groups', setGroupsState, null, g=>({...g,
+    teacher_id:g.teacherId, course_id:g.courseId,
+    start_date:g.startDate, end_date:g.endDate,
+    branch_id:g.branchId, students:JSON.stringify(g.students||[])
+  }));
+  const setCourses = makeSetter('courses', setCoursesState);
+  const setAttendance = makeSetter('attendance', setAttendanceState, null, a=>({...a,
+    group_id:a.groupId, student_id:a.studentId
+  }));
+  const setPayments = makeSetter('payments', setPaymentsState, null, p=>({...p,
+    student_id:p.studentId, group_id:p.groupId
+  }));
+  const setExpenses = makeSetter('expenses', setExpensesState, null, e=>({...e,
+    branch_id:e.branchId
+  }));
+  const setLeads = makeSetter('leads', setLeadsState, null, l=>({...l,
+    assigned_to:l.assignedTo, branch_id:l.branchId
+  }));
+  const setGrades = makeSetter('grades', setGradesState, null, g=>({...g,
+    student_id:g.studentId, group_id:g.groupId,
+    max_score:g.maxScore, teacher_note:g.teacherNote
+  }));
+  const setSalaries = makeSetter('salaries', setSalariesState, null, s=>({...s,
+    teacher_id:s.teacherId, base_amount:s.baseAmount,
+    bonus_amount:s.bonusAmount, branch_id:s.branchId
+  }));
+  const setNotifications = makeSetter('notifications', setNotificationsState, null, n=>({...n,
+    for_roles:JSON.stringify(n.forRoles||[])
+  }));
+  const setSmsLog = makeSetter('sms_log', setSmsLogState, null, s=>({...s,
+    to_phone:s.to, message:s.text
+  }));
 
   if(!cu) return(
     <><style>{STYLE}</style><LoginPage onLogin={u=>{setCu(u);setPage("dashboard");}}/></>
@@ -1541,6 +1687,8 @@ export default function App(){
         <header className="topbar">
           <h2>{PAGE_TITLES[page]||"Dashboard"}</h2>
           <div className="topbar-right">
+            {loading&&<span style={{fontSize:"0.78rem",color:"var(--muted)"}}>⏳ Yuklanmoqda...</span>}
+            <span style={{fontSize:"0.75rem",background:"#d1fae5",color:"#065f46",padding:"3px 9px",borderRadius:"99px",fontWeight:700}}>🟢 DB Ulangan</span>
             <NotifBell notifications={notifications} setNotifications={setNotifications} role={cu.role}/>
           </div>
         </header>
