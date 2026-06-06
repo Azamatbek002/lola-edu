@@ -362,7 +362,7 @@ function LoginPage({onLogin}){
     <div style={{minHeight:"100vh",background:"var(--navy)",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
       <div style={{width:"100%",maxWidth:"440px"}}>
         <div style={{textAlign:"center",marginBottom:"28px"}}>
-          <div style={{fontSize:"3rem",marginBottom:"6px"}}>🌸</div>
+          <div style={{fontSize:"3rem",marginBottom:"6px"}}>🌷</div>
           <h1 style={{color:"#fff",fontSize:"2rem"}}>Lola Edu</h1>
           <p style={{color:"rgba(255,255,255,0.4)",fontSize:"0.88rem",marginTop:"3px"}}>Boshqaruv tizimiga kirish</p>
         </div>
@@ -1663,7 +1663,7 @@ export default function App(){
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <span style={{fontSize:"1.7rem"}}>🌸</span>
+          <span style={{fontSize:"1.7rem"}}>🌷</span>
           <div><h2>Lola Edu</h2><span>Boshqaruv tizimi</span></div>
         </div>
         <nav className="sidebar-nav">
