@@ -1,0 +1,20 @@
+# Supabase CLI sozlamasi (supabase link / supabase functions deploy uchun)
+project_id = "lola-edu"
+
+[functions.payme]
+verify_jwt = false # Payme o'z Basic auth'i bilan keladi
+
+[functions.click]
+verify_jwt = false # Click imzo (sign_string) bilan keladi
+
+[functions.telegram-bot]
+verify_jwt = false # Telegram secret_token bilan keladi
+
+[functions.send-messages]
+verify_jwt = false # CRON_SECRET bilan himoyalangan
+
+[functions.daily-jobs]
+verify_jwt = false # CRON_SECRET bilan himoyalangan
+
+[functions.admin-users]
+verify_jwt = true
