@@ -1,0 +1,20 @@
+# Render'da Lola Edu reklama botini ishga tushirish sozlamasi (Blueprint).
+services:
+  - type: worker
+    name: lola-edu-bot
+    runtime: python
+    rootDir: bot
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_IDS
+        sync: false
+      - key: DB_PATH
+        value: /var/data/bot.db
+    disk:
+      name: bot-data
+      mountPath: /var/data
+      sizeGB: 1
