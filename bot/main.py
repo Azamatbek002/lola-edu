@@ -31,7 +31,9 @@ load_dotenv()
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 ADMIN_IDS = {int(x) for x in os.environ["ADMIN_IDS"].replace(" ", "").split(",") if x}
-DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "data", "bot.db"))
+# Railway'da disk (Volume) ulansa, kanallar ro'yxati o'sha diskda saqlanadi va qayta ishga tushganda yo'qolmaydi.
+DATA_DIR = os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or os.path.join(os.path.dirname(__file__), "data")
+DB_PATH = os.getenv("DB_PATH", os.path.join(DATA_DIR, "bot.db"))
 # Telegram bir botga sekundiga ~30 ta xabar ruxsat beradi, biroz zaxira qoldiramiz.
 MESSAGES_PER_SECOND = float(os.getenv("MESSAGES_PER_SECOND", "25"))
 ALBUM_WAIT_SECONDS = 1.5
