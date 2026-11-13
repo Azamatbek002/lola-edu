@@ -1,6 +1,5 @@
 // Xodim yoki o'quvchi/ota-ona uchun kirish hisobini yaratish (faqat rahbar va admin).
 import { adminClient, corsHeaders, json, normalizePhone } from '../_shared/util.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const ROLES = ['owner', 'admin', 'manager', 'reception', 'sales', 'marketer', 'accountant', 'teacher', 'student', 'parent']
 const PROFILE_FIELDS = ['full_name', 'role', 'branch_id', 'hire_date', 'salary_type', 'salary_fixed', 'salary_percent', 'salary_per_lesson', 'specialization', 'student_id', 'notes', 'is_active', 'lang']
@@ -8,13 +7,12 @@ const PROFILE_FIELDS = ['full_name', 'role', 'branch_id', 'hire_date', 'salary_t
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   const h = corsHeaders
-  // Chaqiruvchini tekshirish
-  const caller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-    global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
-  })
-  const { data: u } = await caller.auth.getUser()
-  if (!u.user) return json({ error: 'unauthorized' }, 401, h)
+  // Chaqiruvchini tekshirish: tokenni Auth serverida tasdiqlaymiz
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+  if (!token) return json({ error: 'unauthorized' }, 401, h)
   const db = adminClient()
+  const { data: u } = await db.auth.getUser(token)
+  if (!u.user) return json({ error: 'unauthorized' }, 401, h)
   const { data: me } = await db.from('profiles').select('role, is_active').eq('id', u.user.id).single()
   if (!me?.is_active || !['owner', 'admin'].includes(me.role)) return json({ error: 'forbidden' }, 403, h)
 
