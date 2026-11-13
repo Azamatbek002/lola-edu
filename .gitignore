@@ -1,5 +1,14 @@
-node_modules/
-dist/
+node_modules
+dist
+dev-dist
+.env
+.env.local
+*.log
+.DS_Store
+supabase/.temp
+deno.lock
+
+# Telegram reklama boti (bot/)
 bot/.env
 bot/data/
 __pycache__/
