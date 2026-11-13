@@ -17,4 +17,4 @@ verify_jwt = false # CRON_SECRET bilan himoyalangan
 verify_jwt = false # CRON_SECRET bilan himoyalangan
 
 [functions.admin-users]
-verify_jwt = true
+verify_jwt = false # tokenni funksiyaning o'zi Auth serverida tekshiradi (yangi API kalitlari bilan mos)
