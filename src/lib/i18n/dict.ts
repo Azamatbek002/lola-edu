@@ -145,6 +145,8 @@ export const dict = {
   'login.password': ['Parol', 'Пароль', 'Şifre'],
   'login.submit': ['Kirish', 'Войти', 'Giriş'],
   'login.error': ["Login yoki parol noto'g'ri", 'Неверный логин или пароль', 'Kullanıcı adı veya şifre hatalı'],
+  'login.network': ["Server bilan aloqa yo'q. Internetni tekshirib, qayta urinib ko'ring.", 'Нет связи с сервером. Проверьте интернет и попробуйте снова.', 'Sunucuya bağlanılamadı. İnterneti kontrol edip tekrar deneyin.'],
+  'login.noProfile': ["Hisob topildi, lekin unga rol biriktirilmagan. Administratorga murojaat qiling.", 'Аккаунт найден, но роль не назначена. Обратитесь к администратору.', 'Hesap bulundu ancak rol atanmamış. Yöneticiye başvurun.'],
   'login.demo': ['Demo: rolni tanlab kiring', 'Демо: войдите, выбрав роль', 'Demo: rol seçerek giriş yapın'],
   'login.demoNote': [
     "Demo rejim: ma'lumotlar faqat shu brauzerda saqlanadi. Haqiqiy ishga tushirish uchun Supabase ulang.",

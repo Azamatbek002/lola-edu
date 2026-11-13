@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { BarChart3, CalendarDays, CheckSquare, MessageSquare, Target, Wallet } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
-import { db } from '@/lib/db'
+import { db, SUPABASE_HOST } from '@/lib/db'
 import { Button, Field, Input } from '@/components/ui'
 import { LangSwitch } from '@/layout/AppShell'
 
@@ -32,9 +32,12 @@ export default function LoginPage() {
     e.preventDefault()
     setBusy(true)
     setErr('')
-    const ok = await login(email, pass)
+    const res = await login(email, pass)
     setBusy(false)
-    if (!ok) setErr(t('login.error'))
+    if (res === 'invalid') setErr(t('login.error'))
+    else if (res === 'network') setErr(t('login.network'))
+    else if (res === 'no_profile') setErr(t('login.noProfile'))
+    else if (res) setErr(res)
   }
 
   return (
@@ -84,6 +87,11 @@ export default function LoginPage() {
               {t('login.apply')} →
             </Link>
           </div>
+          {SUPABASE_HOST && (
+            <div className="small muted" style={{ textAlign: 'center', marginTop: 24, opacity: 0.6 }}>
+              Server: {SUPABASE_HOST.split('.')[0]}
+            </div>
+          )}
           {db.mode === 'demo' && (
             <div className="mt">
               <div className="divider" />

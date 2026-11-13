@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Row, TableName } from '../types'
 import { uid } from '../format'
 import { buildSeed } from './seed'
+import { SUPABASE_KEY, SUPABASE_URL } from '../config'
 
 export interface DB {
   mode: 'demo' | 'supabase'
@@ -12,8 +13,10 @@ export interface DB {
   remove(table: TableName, id: string): Promise<void>
 }
 
-const SB_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+// Production build doim asosiy bazaga ulanadi. `npm run dev` da .env bo'sh bo'lsa — demo rejim.
+const SB_URL = import.meta.env.PROD ? SUPABASE_URL : (import.meta.env.VITE_SUPABASE_URL as string | undefined)
+const SB_KEY = import.meta.env.PROD ? SUPABASE_KEY : (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)
+export const SUPABASE_HOST = SB_URL ? new URL(SB_URL).host : null
 
 export const supabase: SupabaseClient | null = SB_URL && SB_KEY ? createClient(SB_URL, SB_KEY) : null
 
