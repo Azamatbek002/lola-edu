@@ -7,7 +7,8 @@ import { normalizePhone } from './format'
 interface AuthCtx {
   user: Profile | null
   ready: boolean
-  login: (login: string, password: string) => Promise<boolean>
+  /** null — muvaffaqiyatli; aks holda xato kodi: invalid | network | no_profile | boshqa xabar */
+  login: (login: string, password: string) => Promise<string | null>
   demoLogin: (profileId: string) => Promise<void>
   logout: () => Promise<void>
   /** Hozir tanlangan filial (null — barcha filiallar) */
@@ -52,31 +53,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadProfile])
 
   const login = useCallback(
-    async (loginStr: string, password: string) => {
+    async (loginStr: string, password: string): Promise<string | null> => {
       if (supabase) {
-        // Telefon raqam bilan kirish: telefon → email (profiles jadvalidan)
-        let email = loginStr.trim()
-        if (!email.includes('@')) {
-          const { data } = await supabase.rpc('email_by_phone', { p_phone: normalizePhone(email) })
-          if (!data) return false
-          email = data as string
+        try {
+          // Telefon raqam bilan kirish: telefon → email (profiles jadvalidan)
+          let email = loginStr.trim().toLowerCase()
+          if (!email.includes('@')) {
+            const { data, error } = await supabase.rpc('email_by_phone', { p_phone: normalizePhone(email) })
+            if (error) return authError(error)
+            if (!data) return 'invalid'
+            email = data as string
+          }
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+          if (error || !data.user) return authError(error)
+          if (await loadProfile(data.user.id)) return null
+          await supabase.auth.signOut()
+          return 'no_profile'
+        } catch (e) {
+          return authError(e)
         }
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error || !data.user) return false
-        return !!(await loadProfile(data.user.id))
       }
       // Demo: istalgan parol, email/telefon bo'yicha
       const all = await db.list('profiles')
       const s = loginStr.trim().toLowerCase()
       const p = all.find((x) => x.email?.toLowerCase() === s || (x.phone && normalizePhone(x.phone) === normalizePhone(s)))
-      if (!p || !password) return false
+      if (!p || !password) return 'invalid'
       try {
         localStorage.setItem(KEY, p.id)
       } catch {
         /* ignore */
       }
       setUser(p)
-      return true
+      return null
     },
     [loadProfile],
   )
@@ -115,6 +123,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export const useAuth = () => useContext(Ctx)
+
+/** Supabase xatosini foydalanuvchiga tushunarli kodga aylantiradi */
+function authError(e: unknown): string {
+  const msg = (e as { message?: string })?.message ?? String(e)
+  const status = (e as { status?: number })?.status
+  if (/invalid login credentials|invalid_credentials/i.test(msg)) return 'invalid'
+  if (/failed to fetch|network|load failed|fetch/i.test(msg) || status === 0) return 'network'
+  return msg || 'invalid'
+}
 
 /** Joriy foydalanuvchi (himoyalangan sahifalarda doim mavjud) */
 export function useMe(): Profile {
