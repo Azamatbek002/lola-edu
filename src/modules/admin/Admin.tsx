@@ -3,6 +3,7 @@ import { useT, useI18n, LANGS } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { useMutate, useRows } from '@/lib/data'
 import { db, resetDemoData, supabase } from '@/lib/db'
+import { SMS_ENABLED, TELEGRAM_BOT_USERNAME } from '@/lib/config'
 import { useToast } from '@/components/Toast'
 import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
@@ -84,8 +85,8 @@ export function SettingsPage() {
     { name: 'Supabase', ok: db.mode === 'supabase' },
     { name: 'Payme', ok: !!env.VITE_PAYME_MERCHANT_ID },
     { name: 'Click', ok: !!env.VITE_CLICK_SERVICE_ID },
-    { name: 'Telegram bot', ok: !!env.VITE_TELEGRAM_BOT_USERNAME },
-    { name: 'Eskiz SMS', ok: db.mode === 'supabase' },
+    { name: 'Telegram bot', ok: !!TELEGRAM_BOT_USERNAME },
+    { name: 'Eskiz SMS', ok: SMS_ENABLED },
   ]
   return (
     <>
@@ -156,7 +157,7 @@ export function ProfilePage() {
   const { lang, setLang } = useI18n()
   const m = useMutate('profiles')
   const [pw, setPw] = useState('')
-  const bot = import.meta.env.VITE_TELEGRAM_BOT_USERNAME as string | undefined
+  const bot = TELEGRAM_BOT_USERNAME
   return (
     <>
       <PageHead title={t('nav.profile')} />
