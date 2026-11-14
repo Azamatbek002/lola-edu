@@ -7,6 +7,7 @@ import { SMS_ENABLED, TELEGRAM_BOT_USERNAME } from '@/lib/config'
 import { useToast } from '@/components/Toast'
 import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
+import { InstallApp } from '@/components/InstallApp'
 import { DataTable } from '@/components/DataTable'
 import { dateTime, phone } from '@/lib/format'
 import { useGroupStats, useLookups, useOptions } from '../shared'
@@ -160,7 +161,7 @@ export function ProfilePage() {
   const bot = TELEGRAM_BOT_USERNAME
   return (
     <>
-      <PageHead title={t('nav.profile')} />
+      <PageHead title={t('nav.profile')} actions={<InstallApp />} />
       <div className="grid grid-2">
         <Card pad>
           <div className="row">
