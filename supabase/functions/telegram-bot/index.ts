@@ -1,10 +1,39 @@
 // Telegram bot webhook: o'quvchi/ota-ona/xodimni telefon raqami orqali bog'laydi
 // va /balans, /jadval, /davomat buyruqlariga javob beradi.
-// Webhook o'rnatish: https://api.telegram.org/bot<TOKEN>/setWebhook?url=<project>/functions/v1/telegram-bot&secret_token=<TELEGRAM_WEBHOOK_SECRET>
-import { adminClient, money, normalizePhone, safeEqual } from '../_shared/util.ts'
+// Webhook o'rnatish: GET <project>/functions/v1/telegram-bot?setup=1 — funksiya o'zini Telegram'ga ro'yxatdan o'tkazadi.
+// Faqat TELEGRAM_BOT_TOKEN secret kerak; webhook maxfiy kaliti tokendan hosil qilinadi.
+import { adminClient, json, money, normalizePhone, safeEqual, sha256Hex } from '../_shared/util.ts'
 
 const TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? ''
-const SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET') ?? ''
+const SECRET_PROMISE = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')
+  ? Promise.resolve(Deno.env.get('TELEGRAM_WEBHOOK_SECRET')!)
+  : sha256Hex(TOKEN + ':lola-edu-webhook').then((h) => h.slice(0, 48))
+
+async function tg(method: string, body: Record<string, unknown>) {
+  const r = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return await r.json()
+}
+
+/** Webhook va buyruqlar menyusini o'rnatadi. Takror chaqirish xavfsiz. */
+async function setup() {
+  if (!TOKEN) return json({ ok: false, error: 'TELEGRAM_BOT_TOKEN secret kiritilmagan' }, 500)
+  const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-bot`
+  const webhook = await tg('setWebhook', { url, secret_token: await SECRET_PROMISE, allowed_updates: ['message'], drop_pending_updates: true })
+  const commands = await tg('setMyCommands', {
+    commands: [
+      { command: 'start', description: "Boshlash / raqamni bog'lash" },
+      { command: 'balans', description: "Balans va qarz" },
+      { command: 'jadval', description: 'Dars jadvali' },
+      { command: 'davomat', description: 'Oxirgi darslar davomati' },
+    ],
+  })
+  const me = await tg('getMe', {})
+  return json({ ok: !!webhook.ok, webhook: webhook.description, commands: !!commands.ok, username: me.result?.username ?? null })
+}
 const DAYS = ['', 'Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sha', 'Ya']
 
 async function send(chat_id: number | string, text: string, extra: Record<string, unknown> = {}) {
@@ -18,7 +47,8 @@ async function send(chat_id: number | string, text: string, extra: Record<string
 const MENU = { reply_markup: { keyboard: [[{ text: '💰 Balans' }, { text: '📅 Jadval' }], [{ text: '✅ Davomat' }]], resize_keyboard: true } }
 
 Deno.serve(async (req) => {
-  if (!SECRET || !safeEqual(req.headers.get('x-telegram-bot-api-secret-token') ?? '', SECRET)) return new Response('forbidden', { status: 403 })
+  if (req.method === 'GET' && new URL(req.url).searchParams.get('setup') === '1') return await setup()
+  if (!TOKEN || !safeEqual(req.headers.get('x-telegram-bot-api-secret-token') ?? '', await SECRET_PROMISE)) return new Response('forbidden', { status: 403 })
   const update = await req.json().catch(() => null)
   const msg = update?.message
   if (!msg) return new Response('ok')
