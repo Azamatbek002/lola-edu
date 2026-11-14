@@ -116,3 +116,17 @@ describe('analytics & format', () => {
     expect(addMonths('2026-12', 1)).toBe('2027-01')
   })
 })
+
+describe('permissions', async () => {
+  const { canEdit, canView } = await import('./permissions')
+  it('reception covers marketer and sales work', () => {
+    for (const m of ['marketing', 'leads', 'events', 'messages', 'students', 'payments'] as const) expect(canEdit('reception', m)).toBe(true)
+    expect(canView('reception', 'courses')).toBe(true)
+  })
+  it('reception does not see salaries, expenses or reports', () => {
+    for (const m of ['salary', 'expenses', 'reports', 'staff', 'settings'] as const) expect(canView('reception', m)).toBe(false)
+  })
+  it('owner sees everything', () => {
+    for (const m of ['salary', 'expenses', 'reports', 'staff', 'settings', 'marketing', 'audit'] as const) expect(canEdit('owner', m)).toBe(true)
+  })
+})

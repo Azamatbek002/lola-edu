@@ -46,7 +46,8 @@ const VIEW: Record<Module, Role[]> = {
   materials: [...MGMT, 'teacher', 'student', 'parent'],
   teachers: [...MGMT],
   leads: [...MGMT, 'reception', 'sales', 'marketer'],
-  marketing: [...MGMT, 'marketer'],
+  // Resepshn marketolog ishini ham bajaradi (kichik jamoada alohida marketolog yo'q)
+  marketing: [...MGMT, 'marketer', 'reception'],
   payments: [...MGMT, 'reception', 'accountant'],
   debtors: [...MGMT, 'reception', 'accountant'],
   expenses: [...MGMT, 'accountant'],
@@ -75,13 +76,13 @@ const EDIT: Partial<Record<Module, Role[]>> = {
   materials: [...MGMT, 'teacher'],
   teachers: ['owner', 'admin'],
   leads: [...MGMT, 'reception', 'sales'],
-  marketing: [...MGMT, 'marketer'],
+  marketing: [...MGMT, 'marketer', 'reception'],
   payments: [...MGMT, 'reception', 'accountant'],
   expenses: ['owner', 'admin', 'accountant'],
   salary: ['owner', 'admin', 'accountant'],
   store: [...MGMT, 'reception', 'accountant'],
   feedback: [...MGMT],
-  events: [...MGMT, 'marketer'],
+  events: [...MGMT, 'marketer', 'reception'],
 }
 
 export function canView(role: Role, m: Module): boolean {
