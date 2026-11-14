@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import { Avatar, Badge, Button } from '@/components/ui'
 import { PORTAL_NAV, STAFF_NAV, type NavSection } from './nav'
 import { dateTime } from '@/lib/format'
+import { InstallApp } from '@/components/InstallApp'
 import type { Lang } from '@/lib/types'
 
 export function useTheme() {
@@ -190,6 +191,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             <LangSwitch />
           </span>
           <Button variant="ghost" icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label={t('common.darkMode')} />
+          <InstallApp compact />
           <NotificationBell />
           <NavLink to="/profile" className="btn btn-ghost btn-icon" aria-label={t('nav.profile')} style={{ display: 'inline-flex' }}>
             <User size={18} />
