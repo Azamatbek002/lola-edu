@@ -40,3 +40,22 @@ export function safeEqual(a: string, b: string): boolean {
 export function todayTashkent(): string {
   return new Date(Date.now() + 5 * 3600_000).toISOString().slice(0, 10)
 }
+
+/**
+ * pg_cron chaqiruvlarini tekshirish. Maxfiy kalit bazadagi private.app_secrets jadvalida turadi
+ * (cron ishi uni o'zi o'qib yuboradi), shuning uchun alohida qo'lda kiritiladigan secret kerak emas.
+ * CRON_SECRET muhit o'zgaruvchisi ham qo'llab-quvvatlanadi.
+ */
+export async function cronAuthorized(req: Request): Promise<boolean> {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '')
+  if (!token) return false
+  const envSecret = Deno.env.get('CRON_SECRET') ?? ''
+  if (envSecret && safeEqual(token, envSecret)) return true
+  const { data } = await adminClient().rpc('check_cron_secret', { p_secret: token })
+  return data === true
+}
+
+export async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}

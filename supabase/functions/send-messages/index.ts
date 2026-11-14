@@ -1,12 +1,11 @@
 // Navbatdagi xabarlarni yuborish: Telegram Bot API yoki Eskiz.uz SMS.
 // pg_cron har daqiqada chaqiradi (docs/DEPLOY.md). Faqat service role kaliti bilan.
-import { adminClient, json, safeEqual } from '../_shared/util.ts'
+import { adminClient, cronAuthorized, json } from '../_shared/util.ts'
 
 const TG = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? ''
 const ESKIZ_EMAIL = Deno.env.get('ESKIZ_EMAIL') ?? ''
 const ESKIZ_PASSWORD = Deno.env.get('ESKIZ_PASSWORD') ?? ''
 const ESKIZ_FROM = Deno.env.get('ESKIZ_FROM') ?? '4546'
-const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 
 let eskizToken: string | null = null
 async function eskizLogin() {
@@ -51,6 +50,11 @@ export async function processQueue(limit = 100) {
   let failed = 0
   for (const m of queue ?? []) {
     try {
+      if (m.channel === 'sms' && !ESKIZ_EMAIL) {
+        await db.from('messages').update({ status: 'failed', attempts: 3, error: "SMS (Eskiz) hali ulanmagan" }).eq('id', m.id)
+        failed++
+        continue
+      }
       if (m.channel === 'telegram') await sendTelegram(m.recipient, m.text)
       else await sendSms(m.recipient, m.text)
       await db.from('messages').update({ status: 'sent', sent_at: new Date().toISOString(), attempts: m.attempts + 1, error: null }).eq('id', m.id)
@@ -65,7 +69,6 @@ export async function processQueue(limit = 100) {
 }
 
 Deno.serve(async (req) => {
-  const auth = req.headers.get('authorization') ?? ''
-  if (!CRON_SECRET || !safeEqual(auth, `Bearer ${CRON_SECRET}`)) return json({ error: 'forbidden' }, 403)
+  if (!(await cronAuthorized(req))) return json({ error: 'forbidden' }, 403)
   return json(await processQueue())
 })
