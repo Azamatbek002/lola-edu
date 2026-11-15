@@ -7,6 +7,7 @@ import { db, SUPABASE_HOST } from '@/lib/db'
 import { Button, Field, Input } from '@/components/ui'
 import { LangSwitch } from '@/layout/AppShell'
 import { InstallApp } from '@/components/InstallApp'
+import { APP_VERSION } from '@/lib/pwa'
 
 const DEMO = [
   { id: 'u-owner', role: 'owner' },
@@ -65,7 +66,7 @@ export default function LoginPage() {
             <div><BarChart3 size={18} /> {t('nav.reports')}</div>
           </div>
         </div>
-        <div className="foot">© {new Date().getFullYear()} Lola Edu · Toshkent</div>
+        <div className="foot">© {new Date().getFullYear()} Lola Edu · Toshkent · {t('app.version')} {APP_VERSION}</div>
         <FlowerTulip className="tulip" weight="thin" />
       </div>
       <div className="auth-form">
@@ -96,7 +97,7 @@ export default function LoginPage() {
           </div>
           {SUPABASE_HOST && (
             <div className="small muted" style={{ textAlign: 'center', marginTop: 24, opacity: 0.6 }}>
-              Server: {SUPABASE_HOST.split('.')[0]}
+              Server: {SUPABASE_HOST.split('.')[0]} · {t('app.version')} {APP_VERSION}
             </div>
           )}
           {db.mode === 'demo' && (

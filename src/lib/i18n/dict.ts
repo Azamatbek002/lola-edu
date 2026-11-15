@@ -80,6 +80,10 @@ export const dict = {
   'common.language': ['Til', 'Язык', 'Dil'],
 
   // Ilovani o'rnatish (PWA)
+  'app.section': ['Ilova', 'Приложение', 'Uygulama'],
+  'app.version': ['Versiya', 'Версия', 'Sürüm'],
+  'app.update': ['Yangilash', 'Обновить', 'Güncelle'],
+  'app.updateHint': ["Ilova yangi versiyani o'zi yuklaydi. Agar eski ko'rinish qolib ketsa, shu tugmani bosing.", 'Приложение обновляется само. Если видите старую версию, нажмите эту кнопку.', 'Uygulama kendini günceller. Eski görünüm kalırsa bu düğmeye basın.'],
   'pwa.install': ["Ilovani o'rnatish", 'Установить приложение', 'Uygulamayı yükle'],
   'pwa.iosIntro': ["Lola Edu'ni iPhone bosh ekraniga qo'shing — u oddiy ilova kabi ochiladi.", 'Добавьте Lola Edu на экран «Домой» — оно будет открываться как обычное приложение.', "Lola Edu'yu ana ekrana ekleyin — normal bir uygulama gibi açılır."],
   'pwa.iosStep1': ["Safari pastidagi «Ulashish» tugmasini bosing", 'Нажмите кнопку «Поделиться» внизу Safari', "Safari'nin altındaki «Paylaş» düğmesine dokunun"],

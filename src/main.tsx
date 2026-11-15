@@ -6,9 +6,10 @@ import '@fontsource/lora/600.css'
 import '@fontsource/lora/600-italic.css'
 import './styles/app.css'
 import { IconContext } from './components/icons'
-import { initInstallPrompt } from './lib/pwa'
+import { initInstallPrompt, initServiceWorker } from './lib/pwa'
 
 initInstallPrompt()
+initServiceWorker()
 
 try {
   const theme = localStorage.getItem('lola:theme')
