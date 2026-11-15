@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { Badge, type Opt, type Tone } from '@/components/ui'
 import { useById, useRows } from '@/lib/data'
 import { useT, type T } from '@/lib/i18n'
-import { balancesByStudent, groupPrice } from '@/lib/finance'
+import { allocateCharges, balancesByStudent, dueByStudent, groupPrice, type ChargeInfo } from '@/lib/finance'
+import { todayISO } from '@/lib/format'
 import { useBranchFilter } from '@/lib/auth'
 import type { AttendanceStatus, Group, LeadStage, PayMethod, StudentStatus } from '@/lib/types'
 import { PAY_METHODS } from '@/lib/types'
@@ -92,6 +93,28 @@ export function useBalances() {
   const payments = useRows('payments')
   const charges = useRows('charges')
   return useMemo(() => balancesByStudent(payments, charges), [payments, charges])
+}
+
+/**
+ * Har bir hisobning holati (to'langan / kutilmoqda / bugun / muddati o'tgan)
+ * va o'quvchi bo'yicha muddati o'tgan qarz hamda keyingi to'lov.
+ */
+export function useCharges() {
+  const payments = useRows('payments')
+  const charges = useRows('charges')
+  const today = todayISO()
+  return useMemo(() => {
+    const info = allocateCharges(charges, payments, today)
+    const list: ChargeInfo[] = [...info.values()]
+    return { info, list, byStudent: dueByStudent(list), today }
+  }, [charges, payments, today])
+}
+
+/** Markaz sozlamasidagi standart to'lov kuni */
+export function useCenterDay(): number {
+  const settings = useRows('settings')
+  const v = settings.find((s) => s.key === 'center')?.value as { payment_due_day?: number } | undefined
+  return Number(v?.payment_due_day) || 10
 }
 
 /** Guruhdagi faol o'quvchilar soni va narxi */

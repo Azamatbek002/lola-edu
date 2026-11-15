@@ -96,7 +96,7 @@ export function SettingsPage() {
           <div className="form-grid">
             <Field label={t('set.centerName')} full><Input value={val.name ?? ''} onChange={(e) => set({ name: e.target.value })} /></Field>
             <Field label={t('common.phone')}><Input value={val.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} /></Field>
-            <Field label={t('set.dueDay')}><Input type="number" min={1} max={28} value={val.payment_due_day ?? 10} onChange={(e) => set({ payment_due_day: Number(e.target.value) })} /></Field>
+            <Field label={t('set.dueDay')}><Input type="number" min={1} max={31} value={val.payment_due_day ?? 10} onChange={(e) => set({ payment_due_day: Number(e.target.value) })} /></Field>
             <Field label="Telegram"><Input value={val.telegram ?? ''} onChange={(e) => set({ telegram: e.target.value })} /></Field>
             <Field label="Instagram"><Input value={val.instagram ?? ''} onChange={(e) => set({ instagram: e.target.value })} /></Field>
           </div>

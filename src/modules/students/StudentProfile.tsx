@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, KeyRound, MessageSquare, Pencil, Phone, Plus, Snowflake, UserMinus, Wallet, CheckSquare } from 'lucide-react'
+import { ArrowLeft, CalendarClock, KeyRound, MessageSquare, Pencil, Phone, Plus, Snowflake, UserMinus, Wallet, CheckSquare } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit, canView } from '@/lib/permissions'
@@ -11,10 +11,11 @@ import { Avatar, Badge, Button, Card, Empty, Field, Input, Modal, Stat, Tabs, Te
 import { DataTable } from '@/components/DataTable'
 import { EntityForm } from '@/crud/EntityForm'
 import { age, date, money, monthISO, monthLabel, phone, todayISO } from '@/lib/format'
-import { chargeForMonth, studentBalance } from '@/lib/finance'
+import { chargeForMonth, dueDateFor, paymentDayFor, studentBalance } from '@/lib/finance'
 import { attendanceRate } from '@/lib/analytics'
 import { db } from '@/lib/db'
-import { ATT_TONE, StudentStatusBadge, groupSchedule, methodLabel, useGroupStats, useLookups, useOptions } from '../shared'
+import { ATT_TONE, StudentStatusBadge, groupSchedule, methodLabel, useCenterDay, useCharges, useGroupStats, useLookups, useOptions } from '../shared'
+import { DueBadge, DueDate, PaymentDayModal, everyMonth } from '../finance/dues'
 import { studentFields } from './Students'
 import { PaymentModal, ReceiptModal } from '../finance/PaymentModal'
 import type { Enrollment, Payment } from '@/lib/types'
@@ -49,11 +50,15 @@ export default function StudentProfile() {
   const [leave, setLeave] = useState<Enrollment | null>(null)
   const [receipt, setReceipt] = useState<Payment | null>(null)
   const [access, setAccess] = useState(false)
+  const [payDay, setPayDay] = useState<Enrollment | null>(null)
+  const { info: chargeInfo, byStudent } = useCharges()
+  const centerDay = useCenterDay()
+  const due = byStudent.get(id)
 
   const s = students.find((x) => x.id === id)
   const myEnr = enrollments.filter((e) => e.student_id === id)
   const myPay = payments.filter((p) => p.student_id === id).sort((a, b) => b.paid_at.localeCompare(a.paid_at))
-  const myCh = charges.filter((c) => c.student_id === id).sort((a, b) => b.month.localeCompare(a.month))
+  const myCh = charges.filter((c) => c.student_id === id).sort((a, b) => b.due_date.localeCompare(a.due_date))
   const myAtt = attendance.filter((a) => a.student_id === id).sort((a, b) => b.date.localeCompare(a.date))
   const myGr = grades.filter((g) => g.student_id === id).sort((a, b) => b.date.localeCompare(a.date))
   const balance = useMemo(() => studentBalance(id, payments, charges), [id, payments, charges])
@@ -109,7 +114,19 @@ export default function StudentProfile() {
           </div>
         </Card>
         <div className="grid">
-          <Stat icon={<Wallet size={20} />} color={balance < 0 ? '#dc2626' : '#12a150'} label={t('common.balance')} value={money(balance)} sub={balance < 0 ? <span className="red">{t('pay.debt')}</span> : undefined} />
+          <Stat
+            icon={<Wallet size={20} />}
+            color={due?.overdue ? '#dc2626' : '#12a150'}
+            label={t('common.balance')}
+            value={money(balance)}
+            sub={
+              due?.overdue ? (
+                <span className="red">{t('pay.overdue')}: {money(due.overdue)} ({date(due.overdueSince)})</span>
+              ) : due?.next ? (
+                <span>{t('pay.nextPayment')}: <b>{date(due.next.charge.due_date)}</b> · {money(due.next.left)}</span>
+              ) : undefined
+            }
+          />
           <Stat icon={<CheckSquare size={20} />} color="#2563eb" label={t('att.rate')} value={attendanceRate(myAtt) + '%'} />
         </div>
       </div>
@@ -141,6 +158,17 @@ export default function StudentProfile() {
                     {groupSchedule(t, g)} · {L.profiles.get(g.teacher_id || '')?.full_name} · {t('student.startDate')}: {date(e.start_date)}
                     {(e.discount_percent || e.discount_amount) ? ` · ${t('student.discount')}: ${e.discount_percent ? e.discount_percent + '%' : money(e.discount_amount)}` : ''}
                   </div>
+                  {e.status !== 'left' && e.status !== 'finished' && (
+                    <div className="small mt" style={{ marginTop: 4 }}>
+                      <CalendarClock size={13} style={{ verticalAlign: 'text-bottom' }} /> {t('pay.dueDate')}: <b>{everyMonth(t, paymentDayFor(e, g, centerDay))}</b>
+                      {e.payment_day ? <> <Badge tone="purple">{t('pay.personal')}</Badge></> : null}
+                      {editable && (
+                        <button type="button" className="link small" style={{ marginLeft: 8, background: 'none', border: 0, padding: 0, cursor: 'pointer' }} onClick={() => setPayDay(e)}>
+                          {t('common.edit')}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {e.left_reason && <div className="small red">{e.left_reason}</div>}
                 </div>
                 <Badge tone={e.status === 'active' ? 'green' : e.status === 'frozen' ? 'yellow' : 'gray'}>{t('student.status.' + (e.status === 'finished' ? 'graduated' : e.status))}</Badge>
@@ -158,15 +186,16 @@ export default function StudentProfile() {
       )}
 
       {tab === 'payments' && (
-        <div className="grid grid-2">
+        <div className="grid">
           <Card title={t('pay.charges')}>
             <DataTable
               rows={myCh}
               columns={[
-                { key: 'month', label: t('common.month'), render: (c) => monthLabel(c.month) },
-                { key: 'group', label: t('nav.groups'), render: (c) => L.groups.get(c.group_id)?.name },
+                { key: 'month', label: t('common.month'), render: (c) => <span>{monthLabel(c.month)}<br /><span className="small muted">{L.groups.get(c.group_id)?.name}</span></span> },
+                { key: 'due_date', label: t('pay.dueDate'), render: (c) => (chargeInfo.get(c.id) ? <DueDate info={chargeInfo.get(c.id)!} /> : date(c.due_date)) },
                 { key: 'discount', label: t('student.discount'), num: true, hideSm: true, render: (c) => (c.discount ? money(c.discount) : '—') },
                 { key: 'amount', label: t('common.amount'), num: true, render: (c) => money(c.amount) },
+                { key: 'state', label: t('common.status'), render: (c) => (chargeInfo.get(c.id) ? <DueBadge info={chargeInfo.get(c.id)!} short /> : null) },
               ]}
             />
           </Card>
@@ -276,6 +305,7 @@ export default function StudentProfile() {
           hasParent={!!s.parent_phone}
         />
       )}
+      {payDay && L.groups.get(payDay.group_id) && <PaymentDayModal enrollment={payDay} group={L.groups.get(payDay.group_id)!} onClose={() => setPayDay(null)} />}
       {access && <PortalAccessModal studentId={s.id} name={s.full_name} phone={s.phone} parentName={s.parent_name} parentPhone={s.parent_phone} branchId={s.branch_id} onClose={() => setAccess(false)} />}
     </>
   )
@@ -293,8 +323,13 @@ export function EnrollModal({ studentId, groupId, onClose }: { studentId?: strin
   const cm = useMutate('charges')
   const sm = useMutate('students')
   const { sendTrigger } = useMessenger()
-  const [v, setV] = useState({ student_id: studentId ?? '', group_id: groupId ?? '', start_date: todayISO(), discount_percent: '', discount_amount: '' })
+  const centerDay = useCenterDay()
+  const [v, setV] = useState({ student_id: studentId ?? '', group_id: groupId ?? '', start_date: todayISO(), discount_percent: '', discount_amount: '', payment_day: '' })
   const g = L.groups.get(v.group_id)
+  const groupDay = paymentDayFor(null, g, centerDay)
+  const startDay = Number(v.start_date.slice(8, 10)) || 0
+  const payDayNum = v.payment_day === '' ? null : Number(v.payment_day)
+  const payDayOk = payDayNum == null || (Number.isInteger(payDayNum) && payDayNum >= 1 && payDayNum <= 31)
   const already = enrollments.some((e) => e.student_id === v.student_id && e.group_id === v.group_id && e.status !== 'left')
   const full = g ? gs.count(g.id) >= g.capacity : false
 
@@ -303,7 +338,7 @@ export function EnrollModal({ studentId, groupId, onClose }: { studentId?: strin
     : null
 
   const save = async () => {
-    if (!g || !v.student_id || already) return
+    if (!g || !v.student_id || already || !payDayOk) return
     const e = await em.create({
       student_id: v.student_id,
       group_id: g.id,
@@ -311,12 +346,13 @@ export function EnrollModal({ studentId, groupId, onClose }: { studentId?: strin
       status: 'active',
       discount_percent: Number(v.discount_percent) || 0,
       discount_amount: Number(v.discount_amount) || 0,
+      payment_day: payDayNum,
     })
     // Joriy oy uchun proporsional hisob
     const month = monthISO()
     if (g.status === 'active' && v.start_date.slice(0, 7) <= month) {
       const c = chargeForMonth(e, g, courses, month)
-      if (c.amount > 0) await cm.create({ student_id: v.student_id, group_id: g.id, month, amount: c.amount, discount: c.discount, due_date: month + '-10' })
+      if (c.amount > 0) await cm.create({ student_id: v.student_id, group_id: g.id, month, amount: c.amount, discount: c.discount, due_date: dueDateFor(month, paymentDayFor(e, g, centerDay), e.start_date) })
     }
     const st = L.students.get(v.student_id)
     if (st && (st.status === 'trial' || st.status === 'left' || st.status === 'frozen')) await sm.update(st.id, { status: 'active' })
@@ -332,7 +368,7 @@ export function EnrollModal({ studentId, groupId, onClose }: { studentId?: strin
       footer={
         <>
           <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!g || !v.student_id || already} onClick={save}>{t('common.save')}</Button>
+          <Button variant="primary" disabled={!g || !v.student_id || already || !payDayOk} onClick={save}>{t('common.save')}</Button>
         </>
       }
     >
@@ -350,7 +386,14 @@ export function EnrollModal({ studentId, groupId, onClose }: { studentId?: strin
         <Field label={t('student.startDate')}>
           <Input type="date" value={v.start_date} onChange={(e) => setV({ ...v, start_date: e.target.value })} />
         </Field>
-        <div />
+        <Field label={t('pay.paymentDay')} hint={g ? t('pay.paymentDayStudentHint').replace('{n}', String(groupDay)) : undefined} error={payDayOk ? undefined : '1–31'}>
+          <Input type="number" min={1} max={31} value={v.payment_day} placeholder={g ? String(groupDay) : ''} onChange={(e) => setV({ ...v, payment_day: e.target.value })} />
+          {g && startDay > 0 && startDay !== groupDay && (
+            <button type="button" className="link small" style={{ background: 'none', border: 0, padding: 0, marginTop: 4, cursor: 'pointer', textAlign: 'left' }} onClick={() => setV({ ...v, payment_day: v.payment_day === String(startDay) ? '' : String(startDay) })}>
+              {v.payment_day === String(startDay) ? t('pay.groupDay').replace('{n}', String(groupDay)) : t('pay.fromStartDay').replace('{n}', String(startDay))}
+            </button>
+          )}
+        </Field>
         <Field label={t('student.discountPercent')}>
           <Input type="number" min={0} max={100} value={v.discount_percent} onChange={(e) => setV({ ...v, discount_percent: e.target.value })} />
         </Field>
@@ -365,6 +408,11 @@ export function EnrollModal({ studentId, groupId, onClose }: { studentId?: strin
               <span className="muted">{monthLabel(monthISO())}: {preview.lessons}/{preview.total} {t('sal.lessons').toLowerCase()}</span>
               <b>{money(preview.amount)}</b>
             </div>
+            {payDayOk && g && (
+              <div className="small muted" style={{ marginTop: 4 }}>
+                {t('pay.dueDate')}: <b>{date(dueDateFor(monthISO(), paymentDayFor({ payment_day: payDayNum }, g, centerDay), v.start_date))}</b> · {everyMonth(t, paymentDayFor({ payment_day: payDayNum }, g, centerDay))}
+              </div>
+            )}
           </div>
         )}
       </div>

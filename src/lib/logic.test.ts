@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyDiscount, calcTeacherSalary, chargeForMonth, paymeCheckoutUrl, studentBalance } from './finance'
+import { allocateCharges, applyDiscount, calcTeacherSalary, chargeForMonth, dueByStudent, dueDateFor, paymentDayFor, paymeCheckoutUrl, studentBalance } from './finance'
 import { findConflicts, isoWeekday, lessonDatesInMonth } from './schedule'
 import { absenceStreak, conversionRate, leadFunnel } from './analytics'
 import { addMonths, money, normalizePhone } from './format'
@@ -71,6 +71,51 @@ describe('finance', () => {
     ] as Payment[]
     const charges = [{ student_id: 's1', amount: 700000 }] as Charge[]
     expect(studentBalance('s1', payments, charges)).toBe(-200000)
+  })
+  it('payment day: student → group → center', () => {
+    expect(paymentDayFor({ payment_day: 13 }, { payment_day: 15 }, 10)).toBe(13)
+    expect(paymentDayFor({ payment_day: null }, { payment_day: 15 }, 10)).toBe(15)
+    expect(paymentDayFor(null, { payment_day: null }, 5)).toBe(5)
+    expect(paymentDayFor(null, null, null)).toBe(10)
+  })
+  it('due date clamps to month end and never precedes start date', () => {
+    expect(dueDateFor('2027-02', 31)).toBe('2027-02-28')
+    expect(dueDateFor('2026-11', 10)).toBe('2026-11-10')
+    expect(dueDateFor('2026-11', 10, '2026-11-13')).toBe('2026-11-13')
+    expect(dueDateFor('2026-12', 10, '2026-11-13')).toBe('2026-12-10')
+  })
+  it('allocates payments: group first, then oldest due date; overdue only after the due date', () => {
+    const ch = (id: string, group_id: string, month: string, due_date: string, amount: number) => ({ id, student_id: 's1', group_id, month, due_date, amount, discount: 0 }) as Charge
+    const charges = [
+      ch('a-nov', 'gA', '2026-11', '2026-11-10', 400000),
+      ch('b-nov', 'gB', '2026-11', '2026-11-15', 300000),
+      ch('a-dec', 'gA', '2026-12', '2026-12-10', 400000),
+    ]
+    const payments = [
+      { student_id: 's1', group_id: 'gB', amount: 300000, status: 'completed' },
+      { student_id: 's1', group_id: null, amount: 100000, status: 'completed' },
+      { student_id: 's1', group_id: 'gA', amount: 999000, status: 'cancelled' },
+    ] as Payment[]
+    const m = allocateCharges(charges, payments, '2026-11-15')
+    expect(m.get('b-nov')).toMatchObject({ paid: 300000, left: 0, state: 'paid' })
+    expect(m.get('a-nov')).toMatchObject({ paid: 100000, left: 300000, state: 'overdue', days: -5 })
+    expect(m.get('a-dec')).toMatchObject({ paid: 0, state: 'upcoming', days: 25 })
+    // muddat kuni — hali qarz emas
+    expect(allocateCharges(charges, [], '2026-11-10').get('a-nov')!.state).toBe('today')
+    const due = dueByStudent(m.values()).get('s1')!
+    expect(due.overdue).toBe(300000)
+    expect(due.overdueSince).toBe('2026-11-10')
+    expect(due.next?.charge.id).toBe('a-dec')
+  })
+  it('group overpayment covers other groups', () => {
+    const charges = [
+      { id: 'x', student_id: 's1', group_id: 'gA', month: '2026-11', due_date: '2026-11-10', amount: 200000, discount: 0 },
+      { id: 'y', student_id: 's1', group_id: 'gB', month: '2026-11', due_date: '2026-11-05', amount: 100000, discount: 0 },
+    ] as Charge[]
+    const payments = [{ student_id: 's1', group_id: 'gA', amount: 300000, status: 'completed' }] as Payment[]
+    const m = allocateCharges(charges, payments, '2026-11-20')
+    expect(m.get('x')!.state).toBe('paid')
+    expect(m.get('y')!.state).toBe('paid')
   })
   it('teacher salary mixed', () => {
     const payments = [

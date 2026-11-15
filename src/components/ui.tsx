@@ -24,12 +24,12 @@ export function Button({
 }
 
 // ─── Form fields ─────────────────────────────────────
-export function Field({ label, error, children, full }: { label?: ReactNode; error?: string; children: ReactNode; full?: boolean }) {
+export function Field({ label, error, hint, children, full }: { label?: ReactNode; error?: string; hint?: string; children: ReactNode; full?: boolean }) {
   return (
     <label className={'field' + (full ? ' full' : '')}>
       {label && <span>{label}</span>}
       {children}
-      {error && <small className="err">{error}</small>}
+      {error ? <small className="err">{error}</small> : hint ? <small className="hint">{hint}</small> : null}
     </label>
   )
 }

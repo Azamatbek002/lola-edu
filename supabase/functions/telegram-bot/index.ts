@@ -26,7 +26,7 @@ async function setup() {
   const commands = await tg('setMyCommands', {
     commands: [
       { command: 'start', description: "Boshlash / raqamni bog'lash" },
-      { command: 'balans', description: "Balans va qarz" },
+      { command: 'balans', description: "To'lovlar: qarz va keyingi to'lov sanasi" },
       { command: 'jadval', description: 'Dars jadvali' },
       { command: 'davomat', description: 'Oxirgi darslar davomati' },
     ],
@@ -97,9 +97,30 @@ Deno.serve(async (req) => {
 
   const ids = students.map((s) => s.id)
   if (/balans|\/balance/i.test(text)) {
-    const { data } = await db.from('student_balances').select('full_name, balance').in('student_id', ids)
-    const lines = (data ?? []).map((b) => `${b.full_name}: <b>${b.balance < 0 ? '−' + money(-b.balance) + ' (qarz)' : money(b.balance)}</b>`)
-    await send(chat, `💰 Balans\n${lines.join('\n')}`, MENU)
+    // Har bir o'quvchi: muddati o'tgan qarz va keyingi to'lov sanasi (public.charge_status)
+    const [{ data: bal }, { data: st }] = await Promise.all([
+      db.from('student_balances').select('student_id, full_name, balance').in('student_id', ids),
+      db.from('charge_status').select('student_id, group_id, due_date, remaining, state').in('student_id', ids).neq('state', 'paid').order('due_date'),
+    ])
+    const gids = [...new Set((st ?? []).map((c: any) => c.group_id))]
+    const { data: gr } = gids.length ? await db.from('groups').select('id, name').in('id', gids) : { data: [] as { id: string; name: string }[] }
+    const gname = new Map((gr ?? []).map((g) => [g.id, g.name]))
+    const ddmm = (d: string) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`
+    const blocks = (bal ?? []).map((b) => {
+      const mine = (st ?? []).filter((c: any) => c.student_id === b.student_id)
+      const overdue = mine.filter((c: any) => c.state === 'overdue')
+      const next = mine.find((c: any) => c.state !== 'overdue')
+      const lines = [`👤 <b>${b.full_name}</b>`]
+      if (overdue.length) {
+        const sum = overdue.reduce((x: number, c: any) => x + Number(c.remaining), 0)
+        lines.push(`❗ To'lanmagan: <b>${money(sum)}</b>`)
+        for (const c of overdue as any[]) lines.push(`   • ${gname.get(c.group_id) ?? ''}: ${money(Number(c.remaining))} — muddat ${ddmm(c.due_date)}`)
+      }
+      if (next) lines.push(`📅 Keyingi to'lov: <b>${ddmm((next as any).due_date)}</b> — ${money(Number((next as any).remaining))}${(next as any).state === 'today' ? ' (bugun)' : ''}`)
+      if (!overdue.length && !next) lines.push(b.balance > 0 ? `✅ To'langan. Oldindan: ${money(b.balance)}` : "✅ Hammasi to'langan")
+      return lines.join('\n')
+    })
+    await send(chat, `💰 <b>To'lovlar</b>\n\n${blocks.join('\n\n')}`, MENU)
   } else if (/jadval|\/schedule/i.test(text)) {
     const { data } = await db.from('enrollments').select('student_id, groups(name, days, start_time, end_time, rooms(name))').in('student_id', ids).eq('status', 'active')
     const lines = (data ?? []).map((e: any) => `📚 <b>${e.groups.name}</b>\n${e.groups.days.map((d: number) => DAYS[d]).join(', ')} · ${e.groups.start_time}–${e.groups.end_time}${e.groups.rooms ? ' · ' + e.groups.rooms.name : ''}`)

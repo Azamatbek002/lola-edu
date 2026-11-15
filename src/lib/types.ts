@@ -114,6 +114,7 @@ export interface Group extends Base {
   status: GroupStatus
   capacity: number
   monthly_price?: number | null // kurs narxini almashtiradi
+  payment_day?: number | null // har oygi to'lov kuni (1–31); bo'sh — markaz sozlamasi
 }
 
 export type EnrollmentStatus = 'active' | 'frozen' | 'left' | 'finished'
@@ -127,6 +128,7 @@ export interface Enrollment extends Base {
   discount_percent?: number | null
   discount_amount?: number | null
   left_reason?: string | null
+  payment_day?: number | null // shaxsiy to'lov kuni; bo'sh — guruh kuni
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused'
@@ -321,6 +323,7 @@ export type TemplateTrigger =
   | 'payment_received'
   | 'welcome'
   | 'trial_reminder'
+  | 'payment_due'
 
 export interface MessageTemplate extends Base {
   name: string
