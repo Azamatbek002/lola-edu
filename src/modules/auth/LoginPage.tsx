@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { BarChart3, CalendarDays, CheckSquare, FlowerTulip, MessageSquare, Target, Wallet } from '@/components/icons'
 import { useAuth } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
-import { db, SUPABASE_HOST } from '@/lib/db'
+import { db, DEMO_SWITCH, SUPABASE_HOST } from '@/lib/db'
 import { Button, Field, Input } from '@/components/ui'
 import { LangSwitch } from '@/layout/AppShell'
 import { InstallApp } from '@/components/InstallApp'
@@ -94,6 +94,8 @@ export default function LoginPage() {
             <Link to="/apply" className="link">
               {t('login.apply')} →
             </Link>
+            <span className="muted"> · </span>
+            <a href="/privacy.html" className="muted">{t('app.privacy')}</a>
           </div>
           {SUPABASE_HOST && (
             <div className="small muted" style={{ textAlign: 'center', marginTop: 24, opacity: 0.6 }}>
@@ -114,6 +116,22 @@ export default function LoginPage() {
                 ))}
               </div>
               <p className="small muted mt">{t('login.demoNote')}</p>
+              {DEMO_SWITCH && (
+                <Button
+                  block
+                  className="mt"
+                  onClick={() => {
+                    try {
+                      localStorage.removeItem('lola:demo')
+                    } catch {
+                      /* ignore */
+                    }
+                    window.location.replace('/login')
+                  }}
+                >
+                  {t('login.exitDemo')}
+                </Button>
+              )}
             </div>
           )}
         </div>

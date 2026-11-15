@@ -13,3 +13,13 @@ bot/.env
 bot/data/
 __pycache__/
 .venv/
+
+# Android (Play Market ilovasi)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.kotlin/
+# Imzo kalitlari hech qachon repozitoriyga qo'shilmaydi
+*.jks
+*.keystore

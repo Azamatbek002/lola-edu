@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ilova dizayni bilan bir xil: iliq qog'oz fon -->
+    <color name="status_bar">#F6F3EE</color>
+    <color name="status_bar_dark">#161411</color>
+    <color name="divider">#E7E1D7</color>
+    <color name="splash_background">#F6F3EE</color>
+    <color name="ic_launcher_background">#F6F3EE</color>
+</resources>

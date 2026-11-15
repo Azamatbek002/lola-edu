@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.lolaedu.app",
+      "sha256_cert_fingerprints": [
+        "08:F9:79:A2:01:17:70:DB:85:22:6E:DF:E1:8D:87:D6:22:AB:EC:C0:36:3D:E3:AF:CD:A8:FA:E5:64:F8:7A:12"
+      ]
+    }
+  }
+]

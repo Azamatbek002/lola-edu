@@ -229,6 +229,7 @@ export function ProfilePage() {
             <Button icon={<ArrowsClockwise size={16} />} onClick={hardRefresh}>{t('app.update')}</Button>
           </div>
           <p className="small muted mt" style={{ marginTop: 10 }}>{t('app.updateHint')}</p>
+          <a className="small link" href="/privacy.html" target="_blank" rel="noreferrer">{t('app.privacy')}</a>
         </Card>
       </div>
     </>

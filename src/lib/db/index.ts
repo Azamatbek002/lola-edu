@@ -18,7 +18,16 @@ const SB_URL = import.meta.env.PROD ? SUPABASE_URL : (import.meta.env.VITE_SUPAB
 const SB_KEY = import.meta.env.PROD ? SUPABASE_KEY : (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)
 export const SUPABASE_HOST = SB_URL ? new URL(SB_URL).host : null
 
-export const supabase: SupabaseClient | null = SB_URL && SB_KEY ? createClient(SB_URL, SB_KEY) : null
+/** Demo rejimi yoqilganmi (Play tekshiruvchisi uchun): haqiqiy bazaga umuman ulanilmaydi */
+export const DEMO_SWITCH: boolean = (() => {
+  try {
+    return localStorage.getItem('lola:demo') === '1'
+  } catch {
+    return false
+  }
+})()
+
+export const supabase: SupabaseClient | null = !DEMO_SWITCH && SB_URL && SB_KEY ? createClient(SB_URL, SB_KEY) : null
 
 // ─── Supabase ───────────────────────────────────────────────────────────────
 
