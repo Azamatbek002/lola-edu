@@ -320,3 +320,9 @@ table.table { width: 100%; border-collapse: collapse; }
   .printable, .printable * { visibility: visible; }
   .printable { position: absolute; inset: 0; margin: auto; }
 }
+
+/* Summani joyida tahrirlash */
+.amount-edit { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 2px 4px; margin: -2px -4px; border-radius: 6px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.amount-edit svg { opacity: 0.35; transition: opacity 0.12s; }
+.amount-edit:hover { background: var(--gray-bg); }
+.amount-edit:hover svg { opacity: 1; }

@@ -1,17 +1,17 @@
 // Oylik to'lovlar: har bir guruh alohida, har o'quvchi yonida to'lov sanasi va holati
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CalendarClock, CheckCircle2, Wallet, Calculator } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CheckCircle2, Wallet, Calculator, Pencil } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
-import { canEdit, canView } from '@/lib/permissions'
+import { canEdit, canEditAmount, canView } from '@/lib/permissions'
 import { useRows } from '@/lib/data'
 import { Avatar, Badge, Button, Card, Empty, Progress, SearchInput, Select, Stat } from '@/components/ui'
 import { DataTable } from '@/components/DataTable'
 import { money, moneyShort, phone } from '@/lib/format'
 import { paymentDayFor, type ChargeInfo } from '@/lib/finance'
 import { useCenterDay, useCharges, useLookups } from '../shared'
-import { DueBadge, DueDate, everyMonth } from './dues'
+import { DueBadge, DueDate, EditChargeModal, everyMonth } from './dues'
 import { PaymentModal } from './PaymentModal'
 
 type StateFilter = '' | 'unpaid' | ChargeInfo['state']
@@ -30,7 +30,9 @@ export function MonthlyDues({ month, onGenerate }: { month: string; onGenerate?:
   const [state, setState] = useState<StateFilter>('')
   const [q, setQ] = useState('')
   const [pay, setPay] = useState<ChargeInfo | null>(null)
+  const [editing, setEditing] = useState<ChargeInfo | null>(null)
   const canPay = canEdit(me.role, 'payments')
+  const amountEditable = canEditAmount(me.role)
 
   const groupIds = useMemo(() => new Set(groups.map((g) => g.id)), [groups])
   const monthList = useMemo(() => list.filter((i) => i.charge.month === month && groupIds.has(i.charge.group_id)), [list, month, groupIds])
@@ -179,7 +181,22 @@ export function MonthlyDues({ month, onGenerate }: { month: string; onGenerate?:
                       </span>
                     ),
                   },
-                  { key: 'amount', label: t('common.amount'), num: true, hideSm: true, value: (r) => r.i.charge.amount, render: (r) => money(r.i.charge.amount) },
+                  {
+                    key: 'amount',
+                    label: t('common.amount'),
+                    num: true,
+                    hideSm: true,
+                    value: (r) => r.i.charge.amount,
+                    render: (r) =>
+                      amountEditable ? (
+                        <button type="button" className="amount-edit" title={t('pay.editAmount')} onClick={(e) => { e.stopPropagation(); setEditing(r.i) }}>
+                          {money(r.i.charge.amount)}
+                          <Pencil size={13} />
+                        </button>
+                      ) : (
+                        money(r.i.charge.amount)
+                      ),
+                  },
                   { key: 'paid', label: t('pay.paid'), num: true, hideSm: true, value: (r) => r.i.paid, render: (r) => (r.i.paid ? <span className="green">{money(r.i.paid)}</span> : '—') },
                   { key: 'left', label: t('pay.remaining'), num: true, hideSm: true, value: (r) => r.i.left, render: (r) => (r.i.left ? <b className={r.i.state === 'overdue' ? 'red' : ''}>{money(r.i.left)}</b> : '—') },
                   { key: 'state', label: t('common.status'), value: (r) => ['overdue', 'today', 'upcoming', 'paid'].indexOf(r.i.state), render: (r) => (
@@ -208,6 +225,7 @@ export function MonthlyDues({ month, onGenerate }: { month: string; onGenerate?:
         )
       })}
 
+      {editing && <EditChargeModal charge={editing.charge} onClose={() => setEditing(null)} />}
       {pay && <PaymentModal studentId={pay.charge.student_id} groupId={pay.charge.group_id} month={pay.charge.month} amount={pay.left} onClose={() => setPay(null)} />}
     </>
   )

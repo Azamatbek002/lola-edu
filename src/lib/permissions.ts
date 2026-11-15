@@ -97,3 +97,8 @@ export function canEdit(role: Role, m: Module): boolean {
 export function seesAllBranches(role: Role): boolean {
   return role === 'owner' || role === 'admin' || role === 'marketer' || role === 'accountant'
 }
+
+/** Oylik summani va o'quvchining shaxsiy narxini o'zgartirish (bazada ham shu rollar tekshiriladi) */
+export function canEditAmount(role: Role): boolean {
+  return role === 'owner' || role === 'admin' || role === 'manager' || role === 'accountant'
+}

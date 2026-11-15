@@ -61,6 +61,11 @@ describe('finance', () => {
     expect(r.lessons).toBe(6)
     expect(r.amount).toBe(323000) // 700000 × 6/13
   })
+  it('personal monthly price overrides group price (prorated, then discount)', () => {
+    expect(chargeForMonth({ start_date: '2026-01-01', status: 'active', monthly_price: 270000 }, group(), courses, '2026-10').amount).toBe(270000)
+    expect(chargeForMonth({ start_date: '2026-10-19', status: 'active', monthly_price: 260000 }, group(), courses, '2026-10').amount).toBe(120000) // 260000 × 6/13
+    expect(chargeForMonth({ start_date: '2026-01-01', status: 'active', monthly_price: 0 }, group(), courses, '2026-10').amount).toBe(0)
+  })
   it('frozen enrollment is not charged', () => {
     expect(chargeForMonth({ start_date: '2026-01-01', status: 'frozen' }, group(), courses, '2026-10').amount).toBe(0)
   })

@@ -129,6 +129,7 @@ export interface Enrollment extends Base {
   discount_amount?: number | null
   left_reason?: string | null
   payment_day?: number | null // shaxsiy to'lov kuni; bo'sh — guruh kuni
+  monthly_price?: number | null // shaxsiy oylik narx; bo'sh — guruh/kurs narxi
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused'

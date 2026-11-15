@@ -6,6 +6,15 @@ export function groupPrice(group: Pick<Group, 'monthly_price' | 'course_id'>, co
   return courses.find((c) => c.id === group.course_id)?.monthly_price ?? 0
 }
 
+/** O'quvchining to'liq oy uchun narxi: shaxsiy narx → guruh → kurs, so'ng chegirma */
+export function monthlyPriceFor(
+  e: Pick<Enrollment, 'monthly_price' | 'discount_percent' | 'discount_amount'>,
+  group: Pick<Group, 'monthly_price' | 'course_id'>,
+  courses: Pick<Course, 'id' | 'monthly_price'>[],
+): number {
+  return roundTo(applyDiscount(e.monthly_price != null ? e.monthly_price : groupPrice(group, courses), e), 1000)
+}
+
 /** Chegirmadan keyingi oylik summa */
 export function applyDiscount(price: number, e: Pick<Enrollment, 'discount_percent' | 'discount_amount'>): number {
   const p = Math.min(100, Math.max(0, e.discount_percent || 0))
@@ -17,12 +26,12 @@ export function applyDiscount(price: number, e: Pick<Enrollment, 'discount_perce
  * faqat qatnashadigan darslar ulushi hisoblanadi (proporsional).
  */
 export function chargeForMonth(
-  enrollment: Pick<Enrollment, 'start_date' | 'end_date' | 'status' | 'discount_percent' | 'discount_amount'>,
+  enrollment: Pick<Enrollment, 'start_date' | 'end_date' | 'status' | 'discount_percent' | 'discount_amount' | 'monthly_price'>,
   group: Pick<Group, 'days' | 'start_date' | 'end_date' | 'monthly_price' | 'course_id'>,
   courses: Pick<Course, 'id' | 'monthly_price'>[],
   month: string,
 ): { amount: number; discount: number; lessons: number; total: number } {
-  const full = groupPrice(group, courses)
+  const full = enrollment.monthly_price != null ? enrollment.monthly_price : groupPrice(group, courses)
   const all = scheduledDaysInMonth(group.days, month)
   const groupDates = lessonDatesInMonth(group, month)
   const mine = groupDates.filter(

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CalendarClock, KeyRound, MessageSquare, Pencil, Phone, Plus, Snowflake, UserMinus, Wallet, CheckSquare } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
-import { canEdit, canView } from '@/lib/permissions'
+import { canEdit, canEditAmount, canView } from '@/lib/permissions'
 import { useMutate, useRows } from '@/lib/data'
 import { useMessenger } from '@/lib/messaging'
 import { useToast } from '@/components/Toast'
@@ -11,14 +11,14 @@ import { Avatar, Badge, Button, Card, Empty, Field, Input, Modal, Stat, Tabs, Te
 import { DataTable } from '@/components/DataTable'
 import { EntityForm } from '@/crud/EntityForm'
 import { age, date, money, monthISO, monthLabel, phone, todayISO } from '@/lib/format'
-import { chargeForMonth, dueDateFor, paymentDayFor, studentBalance } from '@/lib/finance'
+import { chargeForMonth, dueDateFor, monthlyPriceFor, paymentDayFor, studentBalance } from '@/lib/finance'
 import { attendanceRate } from '@/lib/analytics'
 import { db } from '@/lib/db'
 import { ATT_TONE, StudentStatusBadge, groupSchedule, methodLabel, useCenterDay, useCharges, useGroupStats, useLookups, useOptions } from '../shared'
-import { DueBadge, DueDate, PaymentDayModal, everyMonth } from '../finance/dues'
+import { DueBadge, DueDate, EditChargeModal, PaymentDayModal, everyMonth } from '../finance/dues'
 import { studentFields } from './Students'
 import { PaymentModal, ReceiptModal } from '../finance/PaymentModal'
-import type { Enrollment, Payment } from '@/lib/types'
+import type { Charge, Enrollment, Payment } from '@/lib/types'
 
 type Tab = 'groups' | 'payments' | 'attendance' | 'grades' | 'history'
 
@@ -51,6 +51,8 @@ export default function StudentProfile() {
   const [receipt, setReceipt] = useState<Payment | null>(null)
   const [access, setAccess] = useState(false)
   const [payDay, setPayDay] = useState<Enrollment | null>(null)
+  const [editCharge, setEditCharge] = useState<Charge | null>(null)
+  const courses = useRows('courses')
   const { info: chargeInfo, byStudent } = useCharges()
   const centerDay = useCenterDay()
   const due = byStudent.get(id)
@@ -162,6 +164,9 @@ export default function StudentProfile() {
                     <div className="small mt" style={{ marginTop: 4 }}>
                       <CalendarClock size={13} style={{ verticalAlign: 'text-bottom' }} /> {t('pay.dueDate')}: <b>{everyMonth(t, paymentDayFor(e, g, centerDay))}</b>
                       {e.payment_day ? <> <Badge tone="purple">{t('pay.personal')}</Badge></> : null}
+                      {' · '}
+                      <b>{money(monthlyPriceFor(e, g, courses))}</b> {t('pay.perMonth')}
+                      {e.monthly_price != null || e.discount_percent || e.discount_amount ? <> <Badge tone="purple">{t('pay.personal')}</Badge></> : null}
                       {editable && (
                         <button type="button" className="link small" style={{ marginLeft: 8, background: 'none', border: 0, padding: 0, cursor: 'pointer' }} onClick={() => setPayDay(e)}>
                           {t('common.edit')}
@@ -190,11 +195,12 @@ export default function StudentProfile() {
           <Card title={t('pay.charges')}>
             <DataTable
               rows={myCh}
+              onRowClick={canEditAmount(me.role) ? setEditCharge : undefined}
               columns={[
                 { key: 'month', label: t('common.month'), render: (c) => <span>{monthLabel(c.month)}<br /><span className="small muted">{L.groups.get(c.group_id)?.name}</span></span> },
                 { key: 'due_date', label: t('pay.dueDate'), render: (c) => (chargeInfo.get(c.id) ? <DueDate info={chargeInfo.get(c.id)!} /> : date(c.due_date)) },
                 { key: 'discount', label: t('student.discount'), num: true, hideSm: true, render: (c) => (c.discount ? money(c.discount) : '—') },
-                { key: 'amount', label: t('common.amount'), num: true, render: (c) => money(c.amount) },
+                { key: 'amount', label: t('common.amount'), num: true, render: (c) => (canEditAmount(me.role) ? <span className="amount-edit">{money(c.amount)}<Pencil size={13} /></span> : money(c.amount)) },
                 { key: 'state', label: t('common.status'), render: (c) => (chargeInfo.get(c.id) ? <DueBadge info={chargeInfo.get(c.id)!} short /> : null) },
               ]}
             />
@@ -305,6 +311,7 @@ export default function StudentProfile() {
           hasParent={!!s.parent_phone}
         />
       )}
+      {editCharge && <EditChargeModal charge={editCharge} onClose={() => setEditCharge(null)} />}
       {payDay && L.groups.get(payDay.group_id) && <PaymentDayModal enrollment={payDay} group={L.groups.get(payDay.group_id)!} onClose={() => setPayDay(null)} />}
       {access && <PortalAccessModal studentId={s.id} name={s.full_name} phone={s.phone} parentName={s.parent_name} parentPhone={s.parent_phone} branchId={s.branch_id} onClose={() => setAccess(false)} />}
     </>
