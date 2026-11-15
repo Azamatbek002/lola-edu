@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { AlertTriangle, BookOpen, CalendarClock, CheckSquare, PhoneCall, Target, TrendingUp, Users, Wallet } from 'lucide-react'
+import { AlertTriangle, BookOpen, CalendarClock, CheckSquare, PhoneCall, Target, TrendingUp, Users, Wallet, Phone } from '@/components/icons'
 import { useMe, useBranchFilter } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { useRows } from '@/lib/data'
@@ -11,9 +11,10 @@ import { addDays, addMonths, date, dayLabel, money, moneyShort, monthISO, monthS
 import { monthlyPnL, sumPayments } from '@/lib/finance'
 import { attendanceRate, atRiskStudents, conversionRate } from '@/lib/analytics'
 import { hasLessonOn } from '@/lib/schedule'
-import { useBalances, useGroupStats, useLookups } from '../shared'
+import { useCharges, useGroupStats, useLookups } from '../shared'
 import TeacherDashboard from './TeacherDashboard'
 import PortalDashboard from '../portal/Portal'
+import { C, TOOLTIP_STYLE } from '@/lib/palette'
 
 export default function Dashboard() {
   const me = useMe()
@@ -37,7 +38,7 @@ function StaffDashboard() {
   const attendance = useRows('attendance')
   const tasks = useRows('tasks')
   const events = useRows('events')
-  const balances = useBalances()
+  const { byStudent } = useCharges()
   const gs = useGroupStats()
 
   const today = todayISO()
@@ -47,7 +48,8 @@ function StaffDashboard() {
 
   const stats = useMemo(() => {
     const active = students.filter((s) => s.status === 'active')
-    const debt = students.reduce((s, st) => s + Math.min(0, balances.get(st.id) || 0), 0)
+    const live = students.filter((s) => s.status !== 'left')
+    const debt = live.reduce((s, st) => s + (byStudent.get(st.id)?.overdue || 0), 0)
     const monthRevenue = sumPayments(payments.filter((p) => p.paid_at.startsWith(month)))
     const prevRevenue = sumPayments(payments.filter((p) => p.paid_at.startsWith(addMonths(month, -1))))
     const since = addDays(today, -30)
@@ -58,15 +60,15 @@ function StaffDashboard() {
       trial: students.filter((s) => s.status === 'trial').length,
       groups: groups.filter((g) => g.status === 'active').length,
       forming: groups.filter((g) => g.status === 'forming').length,
-      debt: -debt,
-      debtors: students.filter((s) => (balances.get(s.id) || 0) < 0 && s.status !== 'left').length,
+      debt,
+      debtors: live.filter((s) => (byStudent.get(s.id)?.overdue || 0) > 0).length,
       monthRevenue,
       growth: prevRevenue ? Math.round(((monthRevenue - prevRevenue) / prevRevenue) * 100) : 0,
       newLeads: recentLeads.length,
       conversion: conversionRate(recentLeads),
       attendance: attendanceRate(att),
     }
-  }, [students, balances, payments, leads, attendance, groups, month, today, groupIds])
+  }, [students, byStudent, payments, leads, attendance, groups, month, today, groupIds])
 
   const chart = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => addMonths(month, i - 5))
@@ -122,10 +124,10 @@ function StaffDashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
                   <YAxis tickFormatter={(v) => moneyShort(v)} tickLine={false} axisLine={false} fontSize={11} width={60} />
-                  <Tooltip formatter={(v: number) => money(v)} contentStyle={{ borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card)' }} />
+                  <Tooltip cursor={{ fill: 'var(--hover)' }} formatter={(v: number) => money(v)} contentStyle={TOOLTIP_STYLE} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey={t('rep.revenue')} fill="#c0272d" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey={t('rep.expenses')} fill="#94a3b8" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={t('rep.revenue')} fill={C.tulip} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={t('rep.expenses')} fill={C.slate} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -172,7 +174,7 @@ function StaffDashboard() {
                   <div className="bold ellipsis">{l.full_name}</div>
                   <div className="small muted">{l.phone} · {l.source}</div>
                 </div>
-                <a href={'tel:' + l.phone} className="btn btn-sm btn-secondary">☎</a>
+                <a href={'tel:' + l.phone} className="btn btn-sm btn-secondary btn-icon" aria-label={t('common.phone')}><Phone size={15} /></a>
               </div>
             ))}
           </Card>

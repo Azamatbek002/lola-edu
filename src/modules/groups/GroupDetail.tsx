@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckSquare, MessageSquare, Pencil, UserPlus, Star } from 'lucide-react'
+import { ArrowLeft, CheckSquare, MessageSquare, Pencil, UserPlus, Star, Clock, User, Door, CalendarDays, Coins, CalendarClock } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit, canView } from '@/lib/permissions'
@@ -13,7 +13,9 @@ import { EntityForm } from '@/crud/EntityForm'
 import { addMonths, date, money, monthISO, monthLabel, phone, todayISO } from '@/lib/format'
 import { lessonDatesInMonth } from '@/lib/schedule'
 import { attendanceRate } from '@/lib/analytics'
-import { ATT_TONE, GroupStatusBadge, groupSchedule, useBalances, useGroupStats, useLookups, useOptions } from '../shared'
+import { ATT_TONE, GroupStatusBadge, groupSchedule, useCenterDay, useCharges, useGroupStats, useLookups, useOptions } from '../shared'
+import { paymentDayFor } from '@/lib/finance'
+import { DueBadge, DueDate, everyMonth, useSyncDueDates } from '../finance/dues'
 import { groupFields, useGroupValidator } from './Groups'
 import { EnrollModal, QuickMessage } from '../students/StudentProfile'
 
@@ -29,7 +31,9 @@ export default function GroupDetail() {
   const opts = useOptions()
   const gs = useGroupStats()
   const validate = useGroupValidator()
-  const balances = useBalances()
+  const { list: chargeList } = useCharges()
+  const centerDay = useCenterDay()
+  const syncDue = useSyncDueDates()
   const groups = useRows('groups')
   const enrollments = useRows('enrollments')
   const attendance = useRows('attendance')
@@ -58,6 +62,12 @@ export default function GroupDetail() {
 
   if (!g) return <Empty />
   const course = L.courses.get(g.course_id)
+  const thisMonth = monthISO()
+  // Har o'quvchining joriy oy (yoki eng yaqin to'lanmagan) hisobi
+  const dueOf = (sid: string) => {
+    const mine = chargeList.filter((i) => i.charge.group_id === g.id && i.charge.student_id === sid)
+    return mine.find((i) => i.state === 'overdue') ?? mine.find((i) => i.charge.month === thisMonth) ?? mine.filter((i) => i.state !== 'paid').sort((a, b) => a.charge.due_date.localeCompare(b.charge.due_date))[0]
+  }
   const editable = canEdit(me.role, 'groups')
 
   return (
@@ -74,12 +84,13 @@ export default function GroupDetail() {
             <GroupStatusBadge s={g.status} />
           </div>
           <div className="muted mt" style={{ marginTop: 6 }}>{course?.name}</div>
-          <div className="row-wrap mt" style={{ gap: 18 }}>
-            <span>🕒 {groupSchedule(t, g)}</span>
-            <span>👤 {L.profiles.get(g.teacher_id || '')?.full_name ?? '—'}</span>
-            <span>🚪 {L.rooms.get(g.room_id || '')?.name ?? '—'}</span>
-            <span>📅 {date(g.start_date)}{g.end_date ? ' — ' + date(g.end_date) : ''}</span>
-            <span>💰 {money(gs.price(g))}</span>
+          <div className="facts mt">
+            <span><Clock size={17} /> {groupSchedule(t, g)}</span>
+            <span><User size={17} /> {L.profiles.get(g.teacher_id || '')?.full_name ?? '—'}</span>
+            <span><Door size={17} /> {L.rooms.get(g.room_id || '')?.name ?? '—'}</span>
+            <span><CalendarDays size={17} /> {date(g.start_date)}{g.end_date ? ' — ' + date(g.end_date) : ''}</span>
+            <span><Coins size={17} /> {money(gs.price(g))}</span>
+            <span><CalendarClock size={17} /> {t('pay.dueDate')}: {everyMonth(t, paymentDayFor(null, g, centerDay))}</span>
           </div>
           <div className="row-wrap mt">
             {canView(me.role, 'attendance') && <Button variant="primary" icon={<CheckSquare size={15} />} onClick={() => nav(`/attendance?group=${g.id}&date=${todayISO()}`)}>{t('att.mark')}</Button>}
@@ -117,7 +128,40 @@ export default function GroupDetail() {
               { key: 'status', label: t('common.status'), render: (r) => <Badge tone={r.e.status === 'active' ? 'green' : 'yellow'}>{t('student.status.' + (r.e.status === 'finished' ? 'graduated' : r.e.status))}</Badge> },
               { key: 'att', label: t('att.rate'), num: true, value: (r) => attendanceRate(att.filter((a) => a.student_id === r.id)), render: (r) => attendanceRate(att.filter((a) => a.student_id === r.id)) + '%' },
               ...(canView(me.role, 'payments')
-                ? [{ key: 'bal', label: t('common.balance'), num: true, value: (r: any) => balances.get(r.id) || 0, render: (r: any) => { const b = balances.get(r.id) || 0; return <b className={b < 0 ? 'red' : 'green'}>{money(b)}</b> } }]
+                ? [
+                    {
+                      key: 'due',
+                      label: t('pay.dueDate'),
+                      value: (r: any) => dueOf(r.id)?.charge.due_date ?? '',
+                      render: (r: any) => {
+                        const i = dueOf(r.id)
+                        return i ? (
+                          <span className="row" style={{ gap: 6, alignItems: 'flex-start' }}>
+                            <DueDate info={i} />
+                            {r.e.payment_day ? <Badge tone="purple">{t('pay.personal')}</Badge> : null}
+                          </span>
+                        ) : (
+                          <span className="small muted">{everyMonth(t, paymentDayFor(r.e, g, centerDay))}</span>
+                        )
+                      },
+                    },
+                    {
+                      key: 'pay',
+                      label: t('common.status'),
+                      value: (r: any) => ['overdue', 'today', 'upcoming', 'paid'].indexOf(dueOf(r.id)?.state ?? 'paid'),
+                      render: (r: any) => {
+                        const i = dueOf(r.id)
+                        return i ? (
+                          <span className="col" style={{ gap: 2, alignItems: 'flex-start' }}>
+                            <DueBadge info={i} short />
+                            {i.left > 0 && <b className={'small ' + (i.state === 'overdue' ? 'red' : '')}>{money(i.left)}</b>}
+                          </span>
+                        ) : (
+                          '—'
+                        )
+                      },
+                    },
+                  ]
                 : []),
             ]}
           />
@@ -209,6 +253,7 @@ export default function GroupDetail() {
           onSubmit={async (v) => {
             const { id: _i, created_at, ...patch } = v
             await gm.update(g.id, patch)
+            if ((patch.payment_day ?? null) !== (g.payment_day ?? null)) await syncDue({ id: g.id, payment_day: patch.payment_day ?? null })
             toast.success(t('common.saved'))
             setEdit(false)
           }}

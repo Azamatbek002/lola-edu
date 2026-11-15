@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { Badge, type Opt, type Tone } from '@/components/ui'
 import { useById, useRows } from '@/lib/data'
 import { useT, type T } from '@/lib/i18n'
-import { balancesByStudent, groupPrice } from '@/lib/finance'
+import { allocateCharges, balancesByStudent, dueByStudent, groupPrice, type ChargeInfo } from '@/lib/finance'
+import { todayISO } from '@/lib/format'
 import { useBranchFilter } from '@/lib/auth'
 import type { AttendanceStatus, Group, LeadStage, PayMethod, StudentStatus } from '@/lib/types'
 import { PAY_METHODS } from '@/lib/types'
@@ -11,13 +12,13 @@ export const STUDENT_TONE: Record<StudentStatus, Tone> = { trial: 'blue', active
 export const GROUP_TONE: Record<Group['status'], Tone> = { forming: 'blue', active: 'green', finished: 'purple', archived: 'gray' }
 export const ATT_TONE: Record<AttendanceStatus, Tone> = { present: 'green', absent: 'red', late: 'yellow', excused: 'blue' }
 export const STAGE_COLOR: Record<LeadStage, string> = {
-  new: '#3b82f6',
-  contacted: '#06b6d4',
-  interested: '#f59e0b',
-  trial_scheduled: '#8b5cf6',
-  trial_attended: '#a855f7',
-  won: '#16a34a',
-  lost: '#9ca3af',
+  new: '#2e7d8f',
+  contacted: '#4f8fa3',
+  interested: '#c08a2b',
+  trial_scheduled: '#8a5a9e',
+  trial_attended: '#a0679f',
+  won: '#3e8e5e',
+  lost: '#a89a84',
 }
 
 export function StudentStatusBadge({ s }: { s: StudentStatus }) {
@@ -92,6 +93,28 @@ export function useBalances() {
   const payments = useRows('payments')
   const charges = useRows('charges')
   return useMemo(() => balancesByStudent(payments, charges), [payments, charges])
+}
+
+/**
+ * Har bir hisobning holati (to'langan / kutilmoqda / bugun / muddati o'tgan)
+ * va o'quvchi bo'yicha muddati o'tgan qarz hamda keyingi to'lov.
+ */
+export function useCharges() {
+  const payments = useRows('payments')
+  const charges = useRows('charges')
+  const today = todayISO()
+  return useMemo(() => {
+    const info = allocateCharges(charges, payments, today)
+    const list: ChargeInfo[] = [...info.values()]
+    return { info, list, byStudent: dueByStudent(list), today }
+  }, [charges, payments, today])
+}
+
+/** Markaz sozlamasidagi standart to'lov kuni */
+export function useCenterDay(): number {
+  const settings = useRows('settings')
+  const v = settings.find((s) => s.key === 'center')?.value as { payment_due_day?: number } | undefined
+  return Number(v?.payment_due_day) || 10
 }
 
 /** Guruhdagi faol o'quvchilar soni va narxi */

@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Users, BookOpen, GraduationCap, CalendarDays, CheckSquare, Star, ClipboardList, Award, Library,
   UserSquare2, Target, Megaphone, Wallet, AlertTriangle, Receipt, Banknote, BarChart3, ShoppingBag, MessageSquare,
   MessageCircleHeart, PartyPopper, ListTodo, IdCard, Building2, Settings, History, type LucideIcon,
-} from 'lucide-react'
+} from '@/components/icons'
 import type { Module } from '@/lib/permissions'
 import type { Role } from '@/lib/types'
 

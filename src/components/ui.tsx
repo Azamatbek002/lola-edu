@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes } from 'react'
-import { X, Search, Inbox } from 'lucide-react'
+import { X, Search, Inbox } from './icons'
 import { initials } from '@/lib/format'
 import { useT } from '@/lib/i18n'
 
@@ -24,12 +24,12 @@ export function Button({
 }
 
 // ─── Form fields ─────────────────────────────────────
-export function Field({ label, error, children, full }: { label?: ReactNode; error?: string; children: ReactNode; full?: boolean }) {
+export function Field({ label, error, hint, children, full }: { label?: ReactNode; error?: string; hint?: string; children: ReactNode; full?: boolean }) {
   return (
     <label className={'field' + (full ? ' full' : '')}>
       {label && <span>{label}</span>}
       {children}
-      {error && <small className="err">{error}</small>}
+      {error ? <small className="err">{error}</small> : hint ? <small className="hint">{hint}</small> : null}
     </label>
   )
 }
@@ -103,16 +103,12 @@ export function Badge({ tone = 'gray', children }: { tone?: Tone; children: Reac
   return <span className={'badge badge-' + tone}>{children}</span>
 }
 
-const AV_COLORS = ['#c0272d', '#2563eb', '#7c3aed', '#0d9488', '#d97706', '#db2777', '#4f46e5', '#059669']
+// Avatarlar: tabiiy, yumshoq ranglar (ranglar app.css dagi .av-0 … .av-7 da)
 export function Avatar({ name, size }: { name?: string | null; size?: 'lg' }) {
   const n = name || '?'
   let h = 0
   for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0
-  return (
-    <span className={'avatar' + (size === 'lg' ? ' avatar-lg' : '')} style={{ background: AV_COLORS[h % AV_COLORS.length] }}>
-      {initials(n)}
-    </span>
-  )
+  return <span className={'avatar av-' + (h % 8) + (size === 'lg' ? ' avatar-lg' : '')}>{initials(n)}</span>
 }
 
 export function Card({ title, actions, children, className = '', pad }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; pad?: boolean }) {
@@ -129,17 +125,27 @@ export function Card({ title, actions, children, className = '', pad }: { title?
   )
 }
 
+// Eski hex ranglarni yangi palitraga moslash
+const STAT_TONE: Record<string, string> = {
+  '#12a150': 'var(--green)',
+  '#2563eb': 'var(--blue)',
+  '#d97706': 'var(--yellow)',
+  '#f5a524': 'var(--yellow)',
+  '#dc2626': 'var(--red)',
+  '#7c3aed': 'var(--purple)',
+  '#64748b': 'var(--muted)',
+}
 export function Stat({ icon, label, value, color = 'var(--brand)', sub }: { icon: ReactNode; label: string; value: ReactNode; color?: string; sub?: ReactNode }) {
   return (
     <div className="card stat">
-      <div className="ico" style={{ background: color + '1a', color }}>
-        {icon}
+      <div className="stat-top">
+        <span className="ico" style={{ color: STAT_TONE[color.toLowerCase()] ?? color }}>
+          {icon}
+        </span>
+        <span className="lbl">{label}</span>
       </div>
-      <div style={{ minWidth: 0 }}>
-        <div className="lbl">{label}</div>
-        <div className="val">{value}</div>
-        {sub && <div className="sub">{sub}</div>}
-      </div>
+      <div className="val">{value}</div>
+      {sub && <div className="sub">{sub}</div>}
     </div>
   )
 }

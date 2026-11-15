@@ -10,7 +10,7 @@ import { Avatar, Badge, Button, Card, MonthInput, PageHead, Stat } from '@/compo
 import { DataTable } from '@/components/DataTable'
 import { addMonths, money, monthISO, monthLabel, todayISO } from '@/lib/format'
 import { calcTeacherSalary } from '@/lib/finance'
-import { Banknote } from 'lucide-react'
+import { Banknote } from '@/components/icons'
 
 export default function SalaryPage() {
   const t = useT()

@@ -3,7 +3,7 @@
 import type { Tables, Student, Group, Enrollment, Attendance, Payment, Charge, Lead, Lesson, Grade, LeadStage } from '../types'
 import { addDays, addMonths, monthISO, todayISO } from '../format'
 import { lessonDatesInMonth } from '../schedule'
-import { chargeForMonth } from '../finance'
+import { chargeForMonth, dueDateFor, paymentDayFor } from '../finance'
 
 type Seed = { [K in keyof Tables]?: Tables[K][] }
 
@@ -77,9 +77,9 @@ export function buildSeed(): Seed {
   ].map((p) => ({ is_active: true, lang: 'uz', hire_date: addDays(today, -400), created_at: ts, ...p })) as Tables['profiles'][]
 
   const groups: Group[] = [
-    { id: 'g1', name: 'A1-01 (ertalab)', course_id: 'c1', teacher_id: 'u-t1', branch_id: 'b1', room_id: 'r1', days: [1, 3, 5], start_time: '09:00', end_time: '10:30', start_date: addDays(today, -95), end_date: null, status: 'active', capacity: 14, monthly_price: null },
+    { id: 'g1', name: 'A1-01 (ertalab)', course_id: 'c1', teacher_id: 'u-t1', branch_id: 'b1', room_id: 'r1', days: [1, 3, 5], start_time: '09:00', end_time: '10:30', start_date: addDays(today, -95), end_date: null, status: 'active', capacity: 14, monthly_price: null, payment_day: 5 },
     { id: 'g2', name: 'A2-02 (kechki)', course_id: 'c2', teacher_id: 'u-t1', branch_id: 'b1', room_id: 'r1', days: [1, 3, 5], start_time: '18:00', end_time: '19:30', start_date: addDays(today, -120), end_date: null, status: 'active', capacity: 14, monthly_price: null },
-    { id: 'g3', name: 'B1-01', course_id: 'c3', teacher_id: 'u-t2', branch_id: 'b1', room_id: 'r2', days: [2, 4, 6], start_time: '14:00', end_time: '15:30', start_date: addDays(today, -110), end_date: null, status: 'active', capacity: 12, monthly_price: null },
+    { id: 'g3', name: 'B1-01', course_id: 'c3', teacher_id: 'u-t2', branch_id: 'b1', room_id: 'r2', days: [2, 4, 6], start_time: '14:00', end_time: '15:30', start_date: addDays(today, -110), end_date: null, status: 'active', capacity: 12, monthly_price: null, payment_day: 15 },
     { id: 'g4', name: 'TÖMER-1', course_id: 'c6', teacher_id: 'u-t2', branch_id: 'b1', room_id: 'r3', days: [1, 2, 3, 4, 5], start_time: '16:00', end_time: '18:00', start_date: addDays(today, -100), end_date: null, status: 'active', capacity: 10, monthly_price: null },
     { id: 'g5', name: 'Kids-01', course_id: 'c7', teacher_id: 'u-t3', branch_id: 'b2', room_id: 'r4', days: [2, 4], start_time: '15:00', end_time: '16:00', start_date: addDays(today, -130), end_date: null, status: 'active', capacity: 12, monthly_price: null },
     { id: 'g6', name: 'B2-01', course_id: 'c4', teacher_id: 'u-t4', branch_id: 'b2', room_id: 'r5', days: [1, 3, 5], start_time: '10:00', end_time: '11:30', start_date: addDays(today, -90), end_date: null, status: 'active', capacity: 10, monthly_price: null },
@@ -115,15 +115,18 @@ export function buildSeed(): Seed {
         notes: null,
       })
       const joinedLate = r() < 0.2
+      const start = joinedLate ? addDays(today, -Math.floor(10 + r() * 20)) : g.start_date
       enrollments.push({
         id: `e${n}`,
         student_id: id,
         group_id: g.id,
-        start_date: joinedLate ? addDays(today, -Math.floor(10 + r() * 20)) : g.start_date,
+        start_date: start,
         end_date: null,
         status: status === 'frozen' ? 'frozen' : 'active',
         discount_percent: r() < 0.15 ? 10 : 0,
         discount_amount: 0,
+        // kech qo'shilganlar — o'z kelgan kunida to'laydi
+        payment_day: joinedLate ? Number(start.slice(8, 10)) : null,
       })
     }
   }
@@ -174,7 +177,8 @@ export function buildSeed(): Seed {
     for (const m of months) {
       const c = chargeForMonth(e, g, courses, m)
       if (!c.amount) continue
-      charges.push({ id: `ch-${e.id}-${m}`, student_id: e.student_id, group_id: g.id, month: m, amount: c.amount, discount: c.discount, due_date: m + '-10' })
+      const due_date = dueDateFor(m, paymentDayFor(e, g, 10), e.start_date)
+      charges.push({ id: `ch-${e.id}-${m}`, student_id: e.student_id, group_id: g.id, month: m, amount: c.amount, discount: c.discount, due_date })
       const isCurrent = m === thisMonth
       const pays = isCurrent ? r() < 0.7 : r() < 0.95
       if (pays) {

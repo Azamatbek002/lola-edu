@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Printer } from 'lucide-react'
+import { Printer } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useRows } from '@/lib/data'
 import { Badge, Button, Card, PageHead, Select, Stat } from '@/components/ui'
@@ -9,9 +9,10 @@ import { addMonths, downloadCSV, money, moneyShort, monthISO, monthLabel, monthS
 import { monthlyPnL, sumCharges, sumPayments } from '@/lib/finance'
 import { attendanceRate } from '@/lib/analytics'
 import { useLookups } from '../shared'
-import { TrendingUp, Wallet, Percent, Receipt } from 'lucide-react'
+import { TrendingUp, Wallet, Percent, Receipt } from '@/components/icons'
+import { C, TOOLTIP_STYLE } from '@/lib/palette'
 
-const tip = { borderRadius: 10, background: 'var(--card)', border: '1px solid var(--border)' }
+const tip = TOOLTIP_STYLE
 
 export default function ReportsPage() {
   const t = useT()
@@ -84,11 +85,11 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis tickFormatter={moneyShort} fontSize={11} tickLine={false} axisLine={false} width={60} />
-                <Tooltip formatter={(v: number) => money(v)} contentStyle={tip} />
+                <Tooltip cursor={{ fill: 'var(--hover)' }} formatter={(v: number) => money(v)} contentStyle={tip} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey={t('rep.revenue')} fill="#c0272d" radius={[5, 5, 0, 0]} />
-                <Bar dataKey={t('rep.expenses')} stackId="e" fill="#94a3b8" />
-                <Bar dataKey={t('rep.salaries')} stackId="e" fill="#475569" radius={[5, 5, 0, 0]} />
+                <Bar dataKey={t('rep.revenue')} fill={C.tulip} radius={[5, 5, 0, 0]} />
+                <Bar dataKey={t('rep.expenses')} stackId="e" fill={C.slate} />
+                <Bar dataKey={t('rep.salaries')} stackId="e" fill={C.slateDark} radius={[5, 5, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -98,13 +99,13 @@ export default function ReportsPage() {
             <ResponsiveContainer>
               <AreaChart data={chart}>
                 <defs>
-                  <linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#12a150" stopOpacity={0.35} /><stop offset="100%" stopColor="#12a150" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.green} stopOpacity={0.35} /><stop offset="100%" stopColor={C.green} stopOpacity={0} /></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis tickFormatter={moneyShort} fontSize={11} tickLine={false} axisLine={false} width={60} />
-                <Tooltip formatter={(v: number) => money(v)} contentStyle={tip} />
-                <Area dataKey={t('rep.profit')} stroke="#12a150" strokeWidth={2} fill="url(#gp)" />
+                <Tooltip cursor={{ fill: 'var(--hover)' }} formatter={(v: number) => money(v)} contentStyle={tip} />
+                <Area dataKey={t('rep.profit')} stroke={C.green} strokeWidth={2} fill="url(#gp)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -116,10 +117,10 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
-                <Tooltip contentStyle={tip} />
+                <Tooltip cursor={{ fill: 'var(--hover)' }} contentStyle={tip} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                <Line dataKey={t('rep.joined')} stroke="#12a150" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line dataKey={t('rep.left')} stroke="#c0272d" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line dataKey={t('rep.joined')} stroke={C.green} strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line dataKey={t('rep.left')} stroke={C.tulip} strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

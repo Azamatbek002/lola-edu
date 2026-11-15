@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'

@@ -109,7 +109,7 @@ export function EntityForm<V extends Record<string, any>>({
         {fields
           .filter((f) => !f.show || f.show(v))
           .map((f) => (
-            <Field key={f.name} label={f.label + (f.required ? ' *' : '')} error={errors[f.name] ?? f.hint} full={f.full || f.type === 'textarea' || f.type === 'days'}>
+            <Field key={f.name} label={f.label + (f.required ? ' *' : '')} error={errors[f.name]} hint={f.hint} full={f.full || f.type === 'textarea' || f.type === 'days'}>
               <FieldInput f={f} value={v[f.name]} onChange={(val) => set({ [f.name]: val } as Partial<V>)} />
             </Field>
           ))}

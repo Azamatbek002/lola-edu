@@ -1,6 +1,6 @@
 // O'quvchi va ota-ona portali
 import { useMemo, useState } from 'react'
-import { CalendarDays, CheckSquare, CreditCard, Star, Wallet } from 'lucide-react'
+import { CalendarDays, CheckSquare, CreditCard, Star, Wallet, Paperclip } from '@/components/icons'
 import { useMe } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { useMutate, useRows } from '@/lib/data'
@@ -10,7 +10,8 @@ import { date, money, monthLabel, todayISO, addDays } from '@/lib/format'
 import { attendanceRate } from '@/lib/analytics'
 import { hasLessonOn, isoWeekday } from '@/lib/schedule'
 import { clickCheckoutUrl, paymeCheckoutUrl, studentBalance } from '@/lib/finance'
-import { ATT_TONE, groupSchedule, methodLabel, useLookups } from '../shared'
+import { ATT_TONE, groupSchedule, methodLabel, useCharges, useLookups } from '../shared'
+import { DueBadge, DueDate } from '../finance/dues'
 import { useToast } from '@/components/Toast'
 import type { Student } from '@/lib/types'
 
@@ -90,8 +91,10 @@ export default function PortalDashboard() {
   const attendance = useRows('attendance')
   const grades = useRows('grades')
   const next = useNextLesson(groupIds)
+  const { byStudent: dues } = useCharges()
   if (!student) return <Empty />
   const balance = studentBalance(student.id, payments, charges)
+  const due = dues.get(student.id)
   const myAtt = attendance.filter((a) => a.student_id === student.id)
   const myGr = grades.filter((g) => g.student_id === student.id)
   const avg = myGr.length ? Math.round(myGr.reduce((s, g) => s + (g.score / g.max_score) * 100, 0) / myGr.length) : 0
@@ -99,7 +102,13 @@ export default function PortalDashboard() {
     <>
       <PageHead title={`${t('dash.welcome')}, ${me.full_name.split(' ')[0]}!`} subtitle={me.role === 'parent' ? `${t('role.student')}: ${student.full_name}` : undefined} />
       <div className="grid grid-stats mb">
-        <Stat icon={<Wallet size={20} />} color={balance < 0 ? '#dc2626' : '#12a150'} label={t('dash.myBalance')} value={money(balance)} sub={balance < 0 ? <span className="red">{t('pay.debt')}</span> : undefined} />
+        <Stat
+          icon={<Wallet size={20} />}
+          color={due?.overdue ? '#dc2626' : '#12a150'}
+          label={t('dash.myBalance')}
+          value={money(balance)}
+          sub={due?.overdue ? <span className="red">{t('pay.overdue')}: {money(due.overdue)}</span> : due?.next ? <span>{t('pay.nextPayment')}: <b>{date(due.next.charge.due_date)}</b></span> : undefined}
+        />
         <Stat icon={<CheckSquare size={20} />} color="#2563eb" label={t('att.rate')} value={attendanceRate(myAtt) + '%'} />
         <Stat icon={<Star size={20} />} color="#d97706" label={t('dash.avgScore')} value={avg} />
       </div>
@@ -121,7 +130,13 @@ export default function PortalDashboard() {
           )}
         </Card>
         <Card title={t('nav.myPayments')} pad>
-          <p className="muted mb">{balance < 0 ? `${t('pay.debt')}: ${money(-balance)}` : `${t('common.balance')}: ${money(balance)}`}</p>
+          {due?.overdue ? (
+            <p className="mb red">{t('pay.overdue')}: <b>{money(due.overdue)}</b> · {t('pay.dueDate')}: {date(due.overdueSince)}</p>
+          ) : due?.next ? (
+            <p className="mb">{t('pay.nextPayment')}: <b>{date(due.next.charge.due_date)}</b> · {money(due.next.left)}</p>
+          ) : (
+            <p className="muted mb">{t('common.balance')}: {money(balance)}</p>
+          )}
           <PayOnline studentId={student.id} amount={-balance} />
         </Card>
       </div>
@@ -270,7 +285,7 @@ export function MyHomework() {
               </div>
               <div className="small muted">{L.groups.get(h.group_id)?.name} · {t('common.dueDate')}: {date(h.due_date)}</div>
               {h.description && <p className="mt small">{h.description}</p>}
-              {h.attachment_url && <a className="link small" href={h.attachment_url} target="_blank" rel="noreferrer">📎 {t('common.open')}</a>}
+              {h.attachment_url && <a className="link small" href={h.attachment_url} target="_blank" rel="noreferrer"><Paperclip size={14} style={{ verticalAlign: 'text-bottom' }} /> {t('common.open')}</a>}
               {s?.score != null && <div className="mt bold">{t('common.score')}: {s.score}</div>}
               {s?.feedback && <div className="small muted">{t('hw.feedback')}: {s.feedback}</div>}
               {!s && me.role === 'student' && (
@@ -319,24 +334,28 @@ export function MyPayments() {
   const L = useLookups()
   const payments = useRows('payments')
   const charges = useRows('charges')
+  const { info, byStudent: dues } = useCharges()
   if (!student) return <Empty />
   const mine = payments.filter((p) => p.student_id === student.id).sort((a, b) => b.paid_at.localeCompare(a.paid_at))
-  const myCharges = charges.filter((c) => c.student_id === student.id).sort((a, b) => b.month.localeCompare(a.month))
+  const myCharges = charges.filter((c) => c.student_id === student.id).sort((a, b) => b.due_date.localeCompare(a.due_date))
   const balance = studentBalance(student.id, payments, charges)
+  const due = dues.get(student.id)
   return (
     <>
       <PageHead title={t('nav.myPayments')} actions={<PayOnline studentId={student.id} amount={-balance} />} />
       <div className="grid grid-stats mb">
-        <Stat icon={<Wallet size={20} />} color={balance < 0 ? '#dc2626' : '#12a150'} label={t('common.balance')} value={money(balance)} />
+        <Stat icon={<Wallet size={20} />} color={due?.overdue ? '#dc2626' : '#12a150'} label={t('common.balance')} value={money(balance)} sub={due?.overdue ? <span className="red">{t('pay.overdue')}: {money(due.overdue)}</span> : undefined} />
+        {due?.next && <Stat icon={<CalendarDays size={20} />} color="#2563eb" label={t('pay.nextPayment')} value={date(due.next.charge.due_date)} sub={money(due.next.left)} />}
       </div>
       <div className="grid grid-2">
         <Card title={t('pay.charges')}>
           <DataTable
             rows={myCharges}
             columns={[
-              { key: 'month', label: t('common.month'), render: (c) => monthLabel(c.month) },
-              { key: 'group', label: t('nav.groups'), render: (c) => L.groups.get(c.group_id)?.name },
+              { key: 'month', label: t('common.month'), render: (c) => <span>{monthLabel(c.month)}<br /><span className="small muted">{L.groups.get(c.group_id)?.name}</span></span> },
+              { key: 'due', label: t('pay.dueDate'), render: (c) => (info.get(c.id) ? <DueDate info={info.get(c.id)!} /> : date(c.due_date)) },
               { key: 'amount', label: t('common.amount'), num: true, render: (c) => money(c.amount) },
+              { key: 'state', label: t('common.status'), render: (c) => (info.get(c.id) ? <DueBadge info={info.get(c.id)!} short /> : null) },
             ]}
           />
         </Card>

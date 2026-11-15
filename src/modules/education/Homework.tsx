@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Paperclip, ChatText } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'
@@ -84,8 +85,8 @@ function Submissions({ hw, onClose }: { hw: Homework; onClose: () => void }) {
             <div className="grow">
               <div className="bold">{s.full_name}</div>
               {sub?.text && <div className="small" style={{ whiteSpace: 'pre-wrap' }}>{sub.text}</div>}
-              {sub?.file_url && <a className="link small" href={sub.file_url} target="_blank" rel="noreferrer">📎 {sub.file_url}</a>}
-              {sub?.feedback && <div className="small muted">💬 {sub.feedback}</div>}
+              {sub?.file_url && <a className="link small" href={sub.file_url} target="_blank" rel="noreferrer"><Paperclip size={14} style={{ verticalAlign: 'text-bottom' }} /> {sub.file_url}</a>}
+              {sub?.feedback && <div className="small muted"><ChatText size={14} style={{ verticalAlign: 'text-bottom' }} /> {sub.feedback}</div>}
             </div>
             {sub ? <Badge tone={sub.status === 'checked' ? 'green' : 'blue'}>{t('hw.status.' + sub.status)}{sub.score != null ? ` · ${sub.score}` : ''}</Badge> : <Badge tone="gray">{t('hw.pending')}</Badge>}
             {sub && <Button size="sm" onClick={() => setCheck({ id: sub.id, score: String(sub.score ?? ''), feedback: sub.feedback ?? '' })}>{t('hw.check')}</Button>}

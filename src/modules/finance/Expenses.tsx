@@ -9,9 +9,10 @@ import { Badge, Card, MonthInput } from '@/components/ui'
 import { date, money, monthISO } from '@/lib/format'
 import { sumBy } from '@/lib/finance'
 import { methodLabel, payMethodOptions, useLookups, useOptions } from '../shared'
+import { SERIES, TOOLTIP_STYLE } from '@/lib/palette'
 
 export const EXPENSE_CATEGORIES = ['Ijara', 'Kommunal', 'Marketing', 'Internet', 'Kanselyariya', 'Kitoblar', 'Jihozlar', "Ta'mirlash", 'Soliq', 'Transport', 'Mehmondorchilik', 'Boshqa']
-const COLORS = ['#c0272d', '#2563eb', '#7c3aed', '#0d9488', '#d97706', '#db2777', '#4f46e5', '#059669', '#64748b', '#ea580c', '#0891b2', '#a3a3a3']
+const COLORS = SERIES
 
 export default function ExpensesPage() {
   const t = useT()
@@ -46,7 +47,7 @@ export default function ExpensesPage() {
                     <Pie data={cats} dataKey="value" nameKey="key" innerRadius={55} outerRadius={90} paddingAngle={2}>
                       {cats.map((c, i) => <Cell key={c.key} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => money(v)} contentStyle={{ borderRadius: 10, background: 'var(--card)', border: '1px solid var(--border)' }} />
+                    <Tooltip cursor={{ fill: 'var(--hover)' }} formatter={(v: number) => money(v)} contentStyle={TOOLTIP_STYLE} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

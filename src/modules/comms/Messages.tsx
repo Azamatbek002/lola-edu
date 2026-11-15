@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Send } from 'lucide-react'
+import { Send } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useBranchFilter } from '@/lib/auth'
 import { useRows } from '@/lib/data'
@@ -9,11 +9,11 @@ import { ResourcePage } from '@/crud/ResourcePage'
 import { Badge, Button, Card, Field, PageHead, Select, Tabs, Textarea } from '@/components/ui'
 import { DataTable } from '@/components/DataTable'
 import { dateTime, money, monthISO, monthLabel } from '@/lib/format'
-import { useBalances, useLookups } from '../shared'
+import { useCharges, useLookups } from '../shared'
 import type { TemplateTrigger } from '@/lib/types'
 
 type Audience = 'allActive' | 'group' | 'debtors' | 'parents' | 'leads' | 'teachers'
-const TRIGGERS: TemplateTrigger[] = ['manual', 'debt_reminder', 'absence', 'birthday', 'lesson_reminder', 'payment_received', 'welcome', 'trial_reminder']
+const TRIGGERS: TemplateTrigger[] = ['manual', 'debt_reminder', 'absence', 'birthday', 'lesson_reminder', 'payment_received', 'welcome', 'trial_reminder', 'payment_due']
 
 export default function MessagesPage() {
   const t = useT()
@@ -34,7 +34,7 @@ function Compose() {
   const toast = useToast()
   const byBranch = useBranchFilter()
   const L = useLookups()
-  const balances = useBalances()
+  const { byStudent } = useCharges()
   const students = byBranch(useRows('students'))
   const enrollments = useRows('enrollments')
   const groups = byBranch(useRows('groups')).filter((g) => g.status === 'active' || g.status === 'forming')
@@ -49,7 +49,7 @@ function Compose() {
   const [busy, setBusy] = useState(false)
 
   const recipients: Recipient[] = useMemo(() => {
-    const st = (s: (typeof students)[number]): Recipient => ({ phone: s.phone, telegram_chat_id: s.telegram_chat_id, name: s.full_name, vars: { amount: money(-(balances.get(s.id) || 0)), month: monthLabel(monthISO()) } })
+    const st = (s: (typeof students)[number]): Recipient => ({ phone: s.phone, telegram_chat_id: s.telegram_chat_id, name: s.full_name, vars: { amount: money(byStudent.get(s.id)?.overdue || 0), month: monthLabel(monthISO()) } })
     switch (aud) {
       case 'allActive':
         return students.filter((s) => s.status === 'active').map(st)
@@ -59,7 +59,7 @@ function Compose() {
         return students.filter((s) => ids.has(s.id)).map((s) => ({ ...st(s), vars: { ...st(s).vars, group: g?.name } }))
       }
       case 'debtors':
-        return students.filter((s) => s.status !== 'left' && (balances.get(s.id) || 0) < 0).map((s) => ({ ...st(s), phone: s.parent_phone || s.phone }))
+        return students.filter((s) => s.status !== 'left' && (byStudent.get(s.id)?.overdue || 0) > 0).map((s) => ({ ...st(s), phone: s.parent_phone || s.phone }))
       case 'parents':
         return students.filter((s) => s.status === 'active' && s.parent_phone).map((s) => ({ phone: s.parent_phone, telegram_chat_id: s.parent_telegram_chat_id, name: s.parent_name, vars: { student: s.full_name } }))
       case 'leads':
@@ -67,7 +67,7 @@ function Compose() {
       case 'teachers':
         return profiles.filter((p) => p.role === 'teacher' && p.is_active).map((p) => ({ phone: p.phone, telegram_chat_id: p.telegram_chat_id, name: p.full_name }))
     }
-  }, [aud, group, students, enrollments, leads, profiles, balances, L.groups])
+  }, [aud, group, students, enrollments, leads, profiles, byStudent, L.groups])
 
   const submit = async () => {
     if (!text.trim() || !recipients.length) return toast.error(t('msg.noRecipients'))

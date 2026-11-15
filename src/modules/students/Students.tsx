@@ -6,9 +6,9 @@ import { canEdit } from '@/lib/permissions'
 import { useRows } from '@/lib/data'
 import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Select } from '@/components/ui'
-import { age, money, phone, todayISO } from '@/lib/format'
+import { date, age, money, phone, todayISO } from '@/lib/format'
 import { LEVELS, type Student, type StudentStatus } from '@/lib/types'
-import { StudentStatusBadge, useBalances, useLookups, useOptions } from '../shared'
+import { StudentStatusBadge, useBalances, useCharges, useLookups, useOptions } from '../shared'
 import type { FieldDef } from '@/crud/EntityForm'
 import type { T } from '@/lib/i18n'
 
@@ -40,6 +40,7 @@ export default function StudentsPage() {
   const opts = useOptions()
   const L = useLookups()
   const balances = useBalances()
+  const { byStudent } = useCharges()
   const enrollments = useRows('enrollments')
   const [status, setStatus] = useState<string>('active')
   const [group, setGroup] = useState('')
@@ -61,7 +62,7 @@ export default function StudentsPage() {
       onRowClick={(r) => nav('/students/' + r.id)}
       searchText={(s) => `${s.full_name} ${s.phone} ${s.parent_phone ?? ''} ${s.parent_name ?? ''}`}
       filter={(s: Student) =>
-        (!status || (status === 'debtors' ? (balances.get(s.id) || 0) < 0 && s.status !== 'left' : s.status === status)) &&
+        (!status || (status === 'debtors' ? (byStudent.get(s.id)?.overdue || 0) > 0 && s.status !== 'left' : s.status === status)) &&
         (!group || enrollments.some((e) => e.student_id === s.id && e.group_id === group && e.status !== 'left'))
       }
       toolbar={
@@ -95,12 +96,28 @@ export default function StudentsPage() {
         { key: 'status', label: t('common.status'), render: (s) => <StudentStatusBadge s={s.status} /> },
         {
           key: 'balance',
-          label: t('common.balance'),
+          label: t('pay.payment'),
           num: true,
-          value: (s) => balances.get(s.id) || 0,
+          value: (s) => byStudent.get(s.id)?.overdue || 0,
           render: (s) => {
+            const d = byStudent.get(s.id)
+            if (!d) return <span className="muted">—</span>
+            if (d.overdue)
+              return (
+                <span className="col" style={{ gap: 2, alignItems: 'flex-end' }}>
+                  <b className="red nowrap">{money(d.overdue)}</b>
+                  <span className="small red nowrap">{date(d.overdueSince)}</span>
+                </span>
+              )
+            if (d.next)
+              return (
+                <span className="col" style={{ gap: 2, alignItems: 'flex-end' }}>
+                  <span className="small nowrap">{date(d.next.charge.due_date)}</span>
+                  <span className="small muted nowrap">{money(d.next.left)}</span>
+                </span>
+              )
             const b = balances.get(s.id) || 0
-            return <b className={b < 0 ? 'red' : b > 0 ? 'green' : 'muted'}>{money(b)}</b>
+            return <b className="green nowrap">✓{b > 0 ? ' +' + money(b) : ''}</b>
           },
         },
       ]}

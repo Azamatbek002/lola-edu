@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Printer } from 'lucide-react'
+import { Printer } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMutate, useRows } from '@/lib/data'
 import { useMe } from '@/lib/auth'
@@ -8,10 +8,12 @@ import { useToast } from '@/components/Toast'
 import { Button, Checkbox, Field, Input, Modal, Select, Textarea } from '@/components/ui'
 import { date, money, monthISO, monthLabel, todayISO } from '@/lib/format'
 import { studentBalance } from '@/lib/finance'
-import { payMethodOptions, useOptions, useLookups } from '../shared'
+import { payMethodOptions, useCharges, useOptions, useLookups } from '../shared'
+import { DueBadge } from './dues'
 import type { Payment, PayMethod } from '@/lib/types'
 
-export function PaymentModal({ studentId, onClose }: { studentId?: string; onClose: () => void }) {
+export function PaymentModal(props: { studentId?: string; groupId?: string; month?: string; amount?: number; onClose: () => void }) {
+  const { studentId, onClose } = props
   const t = useT()
   const me = useMe()
   const toast = useToast()
@@ -21,17 +23,22 @@ export function PaymentModal({ studentId, onClose }: { studentId?: string; onClo
   const payments = useRows('payments')
   const charges = useRows('charges')
   const m = useMutate('payments')
+  const { list } = useCharges()
   const { sendTrigger } = useMessenger()
 
   const [sid, setSid] = useState(studentId ?? '')
   const myGroups = enrollments.filter((e) => e.student_id === sid && e.status !== 'left')
   const balance = sid ? studentBalance(sid, payments, charges) : 0
+  const unpaid = useMemo(
+    () => list.filter((i) => i.charge.student_id === sid && i.left > 0).sort((a, b) => a.charge.due_date.localeCompare(b.charge.due_date)),
+    [list, sid],
+  )
   const [v, setV] = useState({
-    group_id: '',
-    amount: '',
+    group_id: props.groupId ?? '',
+    amount: props.amount ? String(props.amount) : '',
     method: 'cash' as PayMethod,
     paid_at: todayISO(),
-    month: monthISO(),
+    month: props.month ?? monthISO(),
     note: '',
   })
   const [notify, setNotify] = useState(true)
@@ -86,6 +93,30 @@ export function PaymentModal({ studentId, onClose }: { studentId?: string; onClo
           <div className="full row between card" style={{ padding: '10px 14px' }}>
             <span className="muted">{t('common.balance')}</span>
             <b className={balance < 0 ? 'red' : 'green'}>{money(balance)}</b>
+          </div>
+        )}
+        {unpaid.length > 0 && (
+          <div className="full card" style={{ padding: 0 }}>
+            <div className="small bold" style={{ padding: '8px 14px 0' }}>{t('pay.unpaidList')}</div>
+            {unpaid.map((i) => {
+              const on = groupId === i.charge.group_id && v.month === i.charge.month
+              return (
+                <button
+                  key={i.charge.id}
+                  type="button"
+                  className="list-item"
+                  style={{ width: '100%', textAlign: 'left', background: on ? 'var(--brand-50)' : 'transparent', border: 0, cursor: 'pointer', color: 'inherit' }}
+                  onClick={() => setV({ ...v, group_id: i.charge.group_id, month: i.charge.month, amount: String(i.left) })}
+                >
+                  <div className="grow">
+                    <div className="small bold">{L.groups.get(i.charge.group_id)?.name} · {monthLabel(i.charge.month)}</div>
+                    <div className="small muted">{t('pay.dueDate')}: {date(i.charge.due_date)}</div>
+                  </div>
+                  <DueBadge info={i} short />
+                  <b className={i.state === 'overdue' ? 'red nowrap' : 'nowrap'}>{money(i.left)}</b>
+                </button>
+              )
+            })}
           </div>
         )}
         <Field label={t('nav.groups')}>

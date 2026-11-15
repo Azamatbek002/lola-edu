@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TelegramLogo } from '@/components/icons'
 import { useT, useI18n, LANGS } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { useMutate, useRows } from '@/lib/data'
@@ -7,6 +8,7 @@ import { SMS_ENABLED, TELEGRAM_BOT_USERNAME } from '@/lib/config'
 import { useToast } from '@/components/Toast'
 import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
+import { InstallApp } from '@/components/InstallApp'
 import { DataTable } from '@/components/DataTable'
 import { dateTime, phone } from '@/lib/format'
 import { useGroupStats, useLookups, useOptions } from '../shared'
@@ -96,7 +98,7 @@ export function SettingsPage() {
           <div className="form-grid">
             <Field label={t('set.centerName')} full><Input value={val.name ?? ''} onChange={(e) => set({ name: e.target.value })} /></Field>
             <Field label={t('common.phone')}><Input value={val.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} /></Field>
-            <Field label={t('set.dueDay')}><Input type="number" min={1} max={28} value={val.payment_due_day ?? 10} onChange={(e) => set({ payment_due_day: Number(e.target.value) })} /></Field>
+            <Field label={t('set.dueDay')}><Input type="number" min={1} max={31} value={val.payment_due_day ?? 10} onChange={(e) => set({ payment_due_day: Number(e.target.value) })} /></Field>
             <Field label="Telegram"><Input value={val.telegram ?? ''} onChange={(e) => set({ telegram: e.target.value })} /></Field>
             <Field label="Instagram"><Input value={val.instagram ?? ''} onChange={(e) => set({ instagram: e.target.value })} /></Field>
           </div>
@@ -160,7 +162,7 @@ export function ProfilePage() {
   const bot = TELEGRAM_BOT_USERNAME
   return (
     <>
-      <PageHead title={t('nav.profile')} />
+      <PageHead title={t('nav.profile')} actions={<InstallApp />} />
       <div className="grid grid-2">
         <Card pad>
           <div className="row">
@@ -210,7 +212,7 @@ export function ProfilePage() {
           {me.telegram_chat_id ? (
             <Badge tone="green">✓ {t('set.connected')}</Badge>
           ) : bot ? (
-            <a className="btn btn-secondary" href={`https://t.me/${bot}?start=${me.id}`} target="_blank" rel="noreferrer">✈️ @{bot}</a>
+            <a className="btn btn-secondary" href={`https://t.me/${bot}?start=${me.id}`} target="_blank" rel="noreferrer"><TelegramLogo size={17} /> @{bot}</a>
           ) : (
             <Badge>{t('set.notConnected')}</Badge>
           )}

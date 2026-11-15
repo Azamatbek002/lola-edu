@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
 import { useRows } from '@/lib/data'
@@ -99,8 +99,8 @@ export default function SchedulePage() {
                 {events
                   .filter((e) => e.date === d && e.time)
                   .map((e) => (
-                    <div key={e.id} className="tt-event" style={{ top: ((toMinutes(e.time!) - START_HOUR * 60) / 60) * HOUR_PX, height: 40, background: '#13192b' }} onClick={() => nav('/events')}>
-                      <b>★ {e.title}</b>
+                    <div key={e.id} className="tt-event" style={{ top: ((toMinutes(e.time!) - START_HOUR * 60) / 60) * HOUR_PX, height: 40, background: 'var(--ink)', color: 'var(--on-ink)' }} onClick={() => nav('/events')}>
+                      <b>{e.title}</b>
                       {e.time}
                     </div>
                   ))}

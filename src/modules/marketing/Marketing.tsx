@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Megaphone, Target, TrendingUp, Users } from 'lucide-react'
+import { Megaphone, Target, TrendingUp, Users } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'

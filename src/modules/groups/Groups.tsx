@@ -10,7 +10,9 @@ import { money, todayISO } from '@/lib/format'
 import { conflictsFor } from '@/lib/schedule'
 import type { FieldDef } from '@/crud/EntityForm'
 import type { Group } from '@/lib/types'
-import { GroupStatusBadge, groupSchedule, useGroupStats, useLookups, useOptions } from '../shared'
+import { GroupStatusBadge, groupSchedule, useCenterDay, useGroupStats, useLookups, useOptions } from '../shared'
+import { paymentDayFor } from '@/lib/finance'
+import { everyMonth } from '../finance/dues'
 
 const STATUSES: Group['status'][] = ['forming', 'active', 'finished', 'archived']
 
@@ -29,6 +31,7 @@ export function groupFields(t: T, opts: ReturnType<typeof useOptions>, branchId?
     { name: 'end_date', label: t('group.endDate'), type: 'date' },
     { name: 'capacity', label: t('group.capacity'), type: 'number', required: true },
     { name: 'monthly_price', label: t('group.priceOverride'), type: 'money', hint: '' },
+    { name: 'payment_day', label: t('pay.paymentDay'), type: 'number', min: 1, max: 31, hint: t('pay.paymentDayGroupHint') },
   ]
 }
 
@@ -39,6 +42,8 @@ export function useGroupValidator() {
   const L = useLookups()
   return (v: Group) => {
     if (v.start_time >= v.end_time) return `${t('group.startTime')} < ${t('group.endTime')}`
+    const pd = (v.payment_day as unknown) === '' || v.payment_day == null ? null : Number(v.payment_day)
+    if (pd != null && !(Number.isInteger(pd) && pd >= 1 && pd <= 31)) return `${t('pay.paymentDay')}: 1–31`
     const c = conflictsFor({ ...v, id: v.id || '__new' }, groups)
     if (!c.length) return null
     return c
@@ -58,6 +63,7 @@ export default function GroupsPage() {
   const L = useLookups()
   const gs = useGroupStats()
   const validate = useGroupValidator()
+  const centerDay = useCenterDay()
   const [status, setStatus] = useState('active')
   const [course, setCourse] = useState('')
 
@@ -114,6 +120,7 @@ export default function GroupsPage() {
           ),
         },
         { key: 'price', label: t('common.price'), num: true, hideSm: true, value: (g) => gs.price(g), render: (g) => money(gs.price(g)) },
+        { key: 'payment_day', label: t('pay.dueDate'), hideSm: true, value: (g) => paymentDayFor(null, g, centerDay), render: (g) => <span className="small nowrap">{everyMonth(t, paymentDayFor(null, g, centerDay))}</span> },
         { key: 'status', label: t('common.status'), render: (g) => <GroupStatusBadge s={g.status} /> },
       ]}
       fields={groupFields(t, opts)}
