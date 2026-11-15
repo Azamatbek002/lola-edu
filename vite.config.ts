@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // Eski sinov manzili: o'rnatilgan ilovadagi service worker o'zini o'chiradi va keshni tozalaydi
+      selfDestroying: true,
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'logo.svg'],
       manifest: {
