@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n'
 import { db, SUPABASE_HOST } from '@/lib/db'
 import { Button, Field, Input } from '@/components/ui'
 import { LangSwitch } from '@/layout/AppShell'
+import { InstallApp } from '@/components/InstallApp'
 
 const DEMO = [
   { id: 'u-owner', role: 'owner' },
@@ -82,6 +83,9 @@ export default function LoginPage() {
               {t('login.submit')}
             </Button>
           </form>
+          <div className="mt">
+            <InstallApp block />
+          </div>
           <div className="mt center small">
             <Link to="/apply" className="link">
               {t('login.apply')} →

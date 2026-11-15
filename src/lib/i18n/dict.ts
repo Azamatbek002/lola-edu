@@ -79,6 +79,13 @@ export const dict = {
   'common.darkMode': ['Tungi rejim', 'Тёмная тема', 'Karanlık mod'],
   'common.language': ['Til', 'Язык', 'Dil'],
 
+  // Ilovani o'rnatish (PWA)
+  'pwa.install': ["Ilovani o'rnatish", 'Установить приложение', 'Uygulamayı yükle'],
+  'pwa.iosIntro': ["Lola Edu'ni iPhone bosh ekraniga qo'shing — u oddiy ilova kabi ochiladi.", 'Добавьте Lola Edu на экран «Домой» — оно будет открываться как обычное приложение.', "Lola Edu'yu ana ekrana ekleyin — normal bir uygulama gibi açılır."],
+  'pwa.iosStep1': ["Safari pastidagi «Ulashish» tugmasini bosing", 'Нажмите кнопку «Поделиться» внизу Safari', "Safari'nin altındaki «Paylaş» düğmesine dokunun"],
+  'pwa.iosStep2': ["Ro'yxatdan «Bosh ekranga qo'shish» ni tanlang", 'Выберите «На экран Домой»', "«Ana Ekrana Ekle» seçeneğini seçin"],
+  'pwa.iosStep3': ["«Qo'shish» ni bosing — bosh ekranda Lola Edu belgisi paydo bo'ladi", 'Нажмите «Добавить» — на экране появится значок Lola Edu', "«Ekle»ye dokunun — ana ekranda Lola Edu simgesi görünür"],
+
   // Rollar
   'role.owner': ['Rahbar', 'Руководитель', 'Yönetici'],
   'role.admin': ['Administrator', 'Администратор', 'Yönetici asistanı'],

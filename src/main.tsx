@@ -2,6 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/app.css'
+import { initInstallPrompt } from './lib/pwa'
+
+initInstallPrompt()
 
 try {
   const theme = localStorage.getItem('lola:theme')
