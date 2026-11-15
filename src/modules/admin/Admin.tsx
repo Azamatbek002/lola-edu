@@ -9,6 +9,8 @@ import { useToast } from '@/components/Toast'
 import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
 import { InstallApp } from '@/components/InstallApp'
+import { APP_VERSION, hardRefresh } from '@/lib/pwa'
+import { ArrowsClockwise } from '@/components/icons'
 import { DataTable } from '@/components/DataTable'
 import { dateTime, phone } from '@/lib/format'
 import { useGroupStats, useLookups, useOptions } from '../shared'
@@ -216,6 +218,17 @@ export function ProfilePage() {
           ) : (
             <Badge>{t('set.notConnected')}</Badge>
           )}
+        </Card>
+        <Card pad>
+          <div className="bold mb" style={{ marginBottom: 6 }}>{t('app.section')}</div>
+          <div className="row between" style={{ flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div className="small muted">{t('app.version')}</div>
+              <div className="bold" style={{ fontVariantNumeric: 'tabular-nums' }}>{APP_VERSION}</div>
+            </div>
+            <Button icon={<ArrowsClockwise size={16} />} onClick={hardRefresh}>{t('app.update')}</Button>
+          </div>
+          <p className="small muted mt" style={{ marginTop: 10 }}>{t('app.updateHint')}</p>
         </Card>
       </div>
     </>

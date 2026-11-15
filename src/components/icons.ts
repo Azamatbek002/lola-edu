@@ -84,5 +84,6 @@ export {
   Paperclip,
   ChatText,
   FlowerTulip,
+  ArrowsClockwise,
   IconContext,
 } from '@phosphor-icons/react'

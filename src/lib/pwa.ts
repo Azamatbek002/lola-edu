@@ -1,6 +1,7 @@
 // Ilovani telefonga o'rnatish (PWA). Brauzer "beforeinstallprompt" hodisasini sahifa
 // ochilishi bilan yuboradi, shuning uchun uni main.tsx da darhol ushlab qolamiz.
 import { useSyncExternalStore } from 'react'
+import { registerSW } from 'virtual:pwa-register'
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -64,4 +65,42 @@ export async function promptInstall(): Promise<boolean> {
   deferred = null
   emit()
   return outcome === 'accepted'
+}
+
+// ─── Yangilanishlar ─────────────────────────────────────────────────────────
+// Yangi versiya chiqqanda: service worker uni fonda yuklab oladi va sahifa o'zi
+// qayta ochiladi. Telefonda ilova odatda yopilmaydi (fonda turadi), shuning uchun
+// ilovaga qaytilganda va har 30 daqiqada yangi versiya tekshiriladi.
+/** Ilova versiyasi: qurilgan sana va commit (vite.config.ts → define) */
+export const APP_VERSION: string = __APP_VERSION__
+
+const busy = () => !!document.querySelector('.modal') || ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '')
+
+export function initServiceWorker() {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator) || import.meta.env.DEV) return
+  registerSW({
+    immediate: true,
+    onRegisteredSW(_url, r) {
+      if (!r) return
+      const check = () => {
+        if (document.visibilityState === 'visible' && navigator.onLine && !busy()) r.update().catch(() => {})
+      }
+      document.addEventListener('visibilitychange', check)
+      setInterval(check, 30 * 60 * 1000)
+    },
+  })
+}
+
+/** "Yangilash" tugmasi: eski keshni tozalab, eng yangi versiyani yuklaydi */
+export async function hardRefresh() {
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? []
+    await Promise.all(regs.map((r) => r.unregister()))
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+    }
+  } finally {
+    window.location.reload()
+  }
 }

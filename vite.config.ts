@@ -3,13 +3,19 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 
+// Ilova versiyasi: Toshkent vaqti bo'yicha qurilgan sana va commit (Vercel beradi)
+const built = new Date(Date.now() + 5 * 3600_000).toISOString()
+const APP_VERSION = `${built.slice(8, 10)}.${built.slice(5, 7)}.${built.slice(0, 4)} ${built.slice(11, 16)}` + (process.env.VERCEL_GIT_COMMIT_SHA ? ' · ' + process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7) : '')
+
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'logo.svg', 'icons/apple-touch-icon.png', 'icons/favicon-48.png'],
+      injectRegister: false, // src/lib/pwa.ts → initServiceWorker
+      includeAssets: ['icon.svg', 'logo.svg', 'og-image.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png'],
       manifest: {
         id: '/',
         name: 'Lola Edu — Türk Dili Markazi',
@@ -37,7 +43,7 @@ export default defineConfig({
           { name: "O'quvchilar", url: '/students', icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
         ],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], globIgnores: ['**/*vietnamese*', '**/*-math-*', '**/*-symbols-*'], navigateFallback: '/index.html' },
+      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], globIgnores: ['**/*vietnamese*', '**/*-math-*', '**/*-symbols-*'], navigateFallback: '/index.html', cleanupOutdatedCaches: true, clientsClaim: true, skipWaiting: true },
     }),
   ],
   build: {
