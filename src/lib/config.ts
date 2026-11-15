@@ -10,3 +10,8 @@ export const TELEGRAM_BOT_USERNAME = 'LoleEdu_bot'
 
 // Eskiz SMS ulanganda true qilinadi (kalitlar Supabase secrets'da: ESKIZ_EMAIL / ESKIZ_PASSWORD)
 export const SMS_ENABLED = false
+
+// Google Play tekshiruvchilari uchun demo kirish: haqiqiy bazaga ulanmaydi,
+// faqat qurilmadagi soxta ma'lumotlar bilan ishlaydi (maxfiy emas)
+export const DEMO_LOGIN = 'demo@lolaedu.uz'
+export const DEMO_PASSWORD = 'LolaDemo2026'

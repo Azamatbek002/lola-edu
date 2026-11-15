@@ -43,7 +43,7 @@ export default defineConfig({
           { name: "O'quvchilar", url: '/students', icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }] },
         ],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], globIgnores: ['**/*vietnamese*', '**/*-math-*', '**/*-symbols-*'], navigateFallback: '/index.html', cleanupOutdatedCaches: true, clientsClaim: true, skipWaiting: true },
+      workbox: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'], globIgnores: ['**/*vietnamese*', '**/*-math-*', '**/*-symbols-*'], navigateFallback: '/index.html', navigateFallbackDenylist: [/^\/\.well-known\//, /^\/privacy/], cleanupOutdatedCaches: true, clientsClaim: true, skipWaiting: true },
     }),
   ],
   build: {

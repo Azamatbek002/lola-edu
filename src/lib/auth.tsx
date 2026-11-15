@@ -3,6 +3,7 @@ import { db, supabase } from './db'
 import type { Profile } from './types'
 import { seesAllBranches } from './permissions'
 import { normalizePhone } from './format'
+import { DEMO_LOGIN, DEMO_PASSWORD } from './config'
 
 interface AuthCtx {
   user: Profile | null
@@ -54,6 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (loginStr: string, password: string): Promise<string | null> => {
+      // Play tekshiruvchisi: demo rejimga o'tib, soxta ma'lumotlar bilan "Rahbar" sifatida kiradi
+      if (supabase && loginStr.trim().toLowerCase() === DEMO_LOGIN && password === DEMO_PASSWORD) {
+        try {
+          localStorage.setItem('lola:demo', '1')
+          localStorage.setItem(KEY, 'u-owner')
+        } catch {
+          return 'invalid'
+        }
+        window.location.replace('/')
+        return null
+      }
       if (supabase) {
         try {
           // Telefon raqam bilan kirish: telefon → email (profiles jadvalidan)
