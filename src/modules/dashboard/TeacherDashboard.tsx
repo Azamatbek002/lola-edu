@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, CalendarClock, CheckSquare, Star, Users } from 'lucide-react'
+import { BookOpen, CalendarClock, CheckSquare, Star, Users } from '@/components/icons'
 import { useMe } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { useRows } from '@/lib/data'

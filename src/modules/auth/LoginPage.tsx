@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3, CalendarDays, CheckSquare, MessageSquare, Target, Wallet } from 'lucide-react'
+import { BarChart3, CalendarDays, CheckSquare, FlowerTulip, MessageSquare, Target, Wallet } from '@/components/icons'
 import { useAuth } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { db, SUPABASE_HOST } from '@/lib/db'
@@ -44,15 +44,17 @@ export default function LoginPage() {
   return (
     <div className="auth">
       <div className="auth-hero">
-        <div className="row">
-          <img src="/logo.svg" alt="" style={{ width: 56, height: 56, background: '#fff', borderRadius: 16, padding: 4 }} />
+        <div className="brandline">
+          <img src="/logo.svg" alt="" />
           <div>
-            <b style={{ fontSize: '1.2rem' }}>Lola Edu</b>
-            <div style={{ opacity: 0.8, fontSize: '0.85rem' }}>{t('app.tagline')}</div>
+            <b>Lola Edu</b>
+            <small>{t('app.tagline')}</small>
           </div>
         </div>
         <div>
-          <h1>Türkçe öğrenmenin en güzel yolu</h1>
+          <h1>
+            Türkçe öğrenmenin <em>en güzel</em> yolu
+          </h1>
           <p>{t('login.subtitle')}</p>
           <div className="feat">
             <div><Target size={18} /> {t('nav.leads')}</div>
@@ -63,7 +65,8 @@ export default function LoginPage() {
             <div><BarChart3 size={18} /> {t('nav.reports')}</div>
           </div>
         </div>
-        <div style={{ opacity: 0.6, fontSize: '0.8rem' }}>© {new Date().getFullYear()} Lola Edu</div>
+        <div className="foot">© {new Date().getFullYear()} Lola Edu · Toshkent</div>
+        <FlowerTulip className="tulip" weight="thin" />
       </div>
       <div className="auth-form">
         <div className="box">
@@ -83,7 +86,7 @@ export default function LoginPage() {
               {t('login.submit')}
             </Button>
           </form>
-          <div className="mt">
+          <div style={{ marginTop: 10 }}>
             <InstallApp block />
           </div>
           <div className="mt center small">

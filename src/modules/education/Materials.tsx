@@ -1,4 +1,4 @@
-import { FileText, Headphones, Link2, Video, File } from 'lucide-react'
+import { FileText, Headphones, Link2, Video, File } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TelegramLogo } from '@/components/icons'
 import { useT, useI18n, LANGS } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { useMutate, useRows } from '@/lib/data'
@@ -211,7 +212,7 @@ export function ProfilePage() {
           {me.telegram_chat_id ? (
             <Badge tone="green">✓ {t('set.connected')}</Badge>
           ) : bot ? (
-            <a className="btn btn-secondary" href={`https://t.me/${bot}?start=${me.id}`} target="_blank" rel="noreferrer">✈️ @{bot}</a>
+            <a className="btn btn-secondary" href={`https://t.me/${bot}?start=${me.id}`} target="_blank" rel="noreferrer"><TelegramLogo size={17} /> @{bot}</a>
           ) : (
             <Badge>{t('set.notConnected')}</Badge>
           )}

@@ -179,3 +179,9 @@ export function dayLabel(iso: string): string {
   const m = currentLang === 'ru' ? MONTHS_GEN_RU[d.getMonth()] : MONTHS[currentLang][d.getMonth()].toLowerCase()
   return `${WEEKDAYS[currentLang][d.getDay()]}, ${d.getDate()} ${m} ${d.getFullYear()}`
 }
+
+/** Yuqori panel uchun: "Shanba, 15 noyabr" */
+export function todayLong(d = new Date()): string {
+  const m = currentLang === 'ru' ? MONTHS_GEN_RU[d.getMonth()] : MONTHS[currentLang][d.getMonth()].toLowerCase()
+  return `${WEEKDAYS[currentLang][d.getDay()]}, ${d.getDate()} ${m}`
+}

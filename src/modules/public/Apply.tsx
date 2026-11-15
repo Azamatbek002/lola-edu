@@ -1,6 +1,6 @@
 // Ochiq ariza formasi: /apply — Instagram/Telegram/sayt uchun. Arizalar lid bo'lib tushadi.
 import { useState } from 'react'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { db, supabase } from '@/lib/db'
 import { useRows } from '@/lib/data'

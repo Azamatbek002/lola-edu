@@ -1,6 +1,6 @@
 // Fikrlar, tadbirlar va vazifalar
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'
@@ -12,7 +12,7 @@ import { Avatar, Badge, Button, Card, Empty, PageHead, Stat } from '@/components
 import { date, todayISO, addDays } from '@/lib/format'
 import { useLookups, useOptions } from '../shared'
 import type { Feedback, Task } from '@/lib/types'
-import { Star } from 'lucide-react'
+import { Star } from '@/components/icons'
 
 export function FeedbackPage() {
   const t = useT()

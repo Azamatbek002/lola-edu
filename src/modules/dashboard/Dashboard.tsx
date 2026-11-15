@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { AlertTriangle, BookOpen, CalendarClock, CheckSquare, PhoneCall, Target, TrendingUp, Users, Wallet } from 'lucide-react'
+import { AlertTriangle, BookOpen, CalendarClock, CheckSquare, PhoneCall, Target, TrendingUp, Users, Wallet, Phone } from '@/components/icons'
 import { useMe, useBranchFilter } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { useRows } from '@/lib/data'
@@ -14,6 +14,7 @@ import { hasLessonOn } from '@/lib/schedule'
 import { useCharges, useGroupStats, useLookups } from '../shared'
 import TeacherDashboard from './TeacherDashboard'
 import PortalDashboard from '../portal/Portal'
+import { C, TOOLTIP_STYLE } from '@/lib/palette'
 
 export default function Dashboard() {
   const me = useMe()
@@ -123,10 +124,10 @@ function StaffDashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
                   <YAxis tickFormatter={(v) => moneyShort(v)} tickLine={false} axisLine={false} fontSize={11} width={60} />
-                  <Tooltip formatter={(v: number) => money(v)} contentStyle={{ borderRadius: 10, border: '1px solid var(--border)', background: 'var(--card)' }} />
+                  <Tooltip cursor={{ fill: 'var(--hover)' }} formatter={(v: number) => money(v)} contentStyle={TOOLTIP_STYLE} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey={t('rep.revenue')} fill="#c0272d" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey={t('rep.expenses')} fill="#94a3b8" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={t('rep.revenue')} fill={C.tulip} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey={t('rep.expenses')} fill={C.slate} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -173,7 +174,7 @@ function StaffDashboard() {
                   <div className="bold ellipsis">{l.full_name}</div>
                   <div className="small muted">{l.phone} · {l.source}</div>
                 </div>
-                <a href={'tel:' + l.phone} className="btn btn-sm btn-secondary">☎</a>
+                <a href={'tel:' + l.phone} className="btn btn-sm btn-secondary btn-icon" aria-label={t('common.phone')}><Phone size={15} /></a>
               </div>
             ))}
           </Card>

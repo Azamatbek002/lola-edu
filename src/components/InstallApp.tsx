@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Share, SquarePlus } from 'lucide-react'
+import { Download, Share, SquarePlus } from './icons'
 import { Button, Modal } from './ui'
 import { useT } from '@/lib/i18n'
 import { promptInstall, useInstallMode } from '@/lib/pwa'

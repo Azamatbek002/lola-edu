@@ -1,6 +1,6 @@
 // O'quvchi va ota-ona portali
 import { useMemo, useState } from 'react'
-import { CalendarDays, CheckSquare, CreditCard, Star, Wallet } from 'lucide-react'
+import { CalendarDays, CheckSquare, CreditCard, Star, Wallet, Paperclip } from '@/components/icons'
 import { useMe } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { useMutate, useRows } from '@/lib/data'
@@ -285,7 +285,7 @@ export function MyHomework() {
               </div>
               <div className="small muted">{L.groups.get(h.group_id)?.name} · {t('common.dueDate')}: {date(h.due_date)}</div>
               {h.description && <p className="mt small">{h.description}</p>}
-              {h.attachment_url && <a className="link small" href={h.attachment_url} target="_blank" rel="noreferrer">📎 {t('common.open')}</a>}
+              {h.attachment_url && <a className="link small" href={h.attachment_url} target="_blank" rel="noreferrer"><Paperclip size={14} style={{ verticalAlign: 'text-bottom' }} /> {t('common.open')}</a>}
               {s?.score != null && <div className="mt bold">{t('common.score')}: {s.score}</div>}
               {s?.feedback && <div className="small muted">{t('hw.feedback')}: {s.feedback}</div>}
               {!s && me.role === 'student' && (

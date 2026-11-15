@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Printer } from 'lucide-react'
+import { Printer } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'

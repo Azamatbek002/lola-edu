@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
 import { canEdit } from '@/lib/permissions'

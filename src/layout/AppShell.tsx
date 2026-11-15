@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, LogOut, Menu, Moon, Sun, User } from 'lucide-react'
+import { Bell, Checks, LogOut, Menu, Moon, Sun, User } from '@/components/icons'
 import { useAuth, useMe } from '@/lib/auth'
 import { useI18n, LANGS } from '@/lib/i18n'
 import { canView } from '@/lib/permissions'
@@ -8,7 +8,7 @@ import { useMutate, useRows } from '@/lib/data'
 import { db } from '@/lib/db'
 import { Avatar, Badge, Button } from '@/components/ui'
 import { PORTAL_NAV, STAFF_NAV, type NavSection } from './nav'
-import { dateTime } from '@/lib/format'
+import { dateTime, todayLong } from '@/lib/format'
 import { InstallApp } from '@/components/InstallApp'
 import type { Lang } from '@/lib/types'
 
@@ -22,6 +22,7 @@ export function useTheme() {
   })
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', theme === 'dark' ? '#161411' : '#f6f3ee'))
     try {
       localStorage.setItem('lola:theme', theme)
     } catch {
@@ -69,17 +70,15 @@ function NotificationBell() {
   return (
     <div style={{ position: 'relative' }} ref={ref}>
       <Button variant="ghost" icon={<Bell size={19} />} onClick={() => setOpen((o) => !o)} aria-label={t('nav.notifications')} />
-      {unread.length > 0 && (
-        <span style={{ position: 'absolute', top: 2, right: 2, background: 'var(--brand)', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '0 5px' }}>{unread.length}</span>
-      )}
+      {unread.length > 0 && <span className="notif-count">{unread.length}</span>}
       {open && (
         <div className="popover">
           <div className="card-head">
             <h3>{t('nav.notifications')}</h3>
             {unread.length > 0 && (
-              <span className="link small" onClick={markAll}>
-                ✓ {t('common.all')}
-              </span>
+              <Button size="sm" variant="ghost" icon={<Checks size={15} />} onClick={markAll}>
+                {t('common.all')}
+              </Button>
             )}
           </div>
           <div style={{ maxHeight: 380, overflowY: 'auto' }}>
@@ -147,8 +146,12 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
               <div className="nav-section">{t(s.title)}</div>
               {s.items.map((i) => (
                 <NavLink key={i.to} to={i.to} end={i.to === '/'} className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
-                  <i.icon size={17} />
-                  <span>{t(i.label)}</span>
+                  {({ isActive }) => (
+                    <>
+                      <i.icon size={18} weight={isActive ? 'duotone' : 'regular'} />
+                      <span>{t(i.label)}</span>
+                    </>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -162,16 +165,21 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
               <small>{t('role.' + me.role)}</small>
             </div>
           </NavLink>
-          <button className="btn btn-ghost btn-sm btn-block" style={{ color: 'rgba(255,255,255,.6)', marginTop: 8 }} onClick={logout}>
-            <LogOut size={15} /> {t('nav.logout')}
+          <button className="btn btn-ghost btn-sm btn-block" style={{ marginTop: 6, justifyContent: 'flex-start', color: 'var(--muted)' }} onClick={logout}>
+            <LogOut size={16} /> {t('nav.logout')}
           </button>
         </div>
       </aside>
       <div className={'backdrop' + (open ? ' open' : '')} onClick={() => setOpen(false)} />
       <div className="main">
         <header className="topbar">
-          <Button variant="ghost" className="menu-btn" icon={<Menu size={20} />} onClick={() => setOpen(true)} aria-label="menu" />
+          <Button variant="ghost" className="menu-btn" icon={<Menu size={22} />} onClick={() => setOpen(true)} aria-label="menu" />
+          <div className="mobile-brand">
+            <img src="/logo.svg" alt="" />
+            <span>Lola Edu</span>
+          </div>
           <h1>{title}</h1>
+          <span className="today hide-sm">{todayLong()}</span>
           {db.mode === 'demo' && (
             <span className="hide-sm">
               <Badge tone="yellow">{t('common.demoMode')}</Badge>
@@ -202,10 +210,14 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
       <nav className="bottom-nav">
         {bottom.map((i) => (
           <NavLink key={i.to} to={i.to} end={i.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
-            <i.icon size={20} />
-            <span className="ellipsis" style={{ maxWidth: 70 }}>
-              {t(i.label)}
-            </span>
+            {({ isActive }) => (
+              <>
+                <i.icon size={22} weight={isActive ? 'fill' : 'regular'} />
+                <span className="ellipsis" style={{ maxWidth: 70 }}>
+                  {t(i.label)}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

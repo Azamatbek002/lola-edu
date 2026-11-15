@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarClock, KeyRound, MessageSquare, Pencil, Phone, Plus, Snowflake, UserMinus, Wallet, CheckSquare } from 'lucide-react'
+import { ArrowLeft, CalendarClock, KeyRound, MessageSquare, Pencil, Phone, Plus, Snowflake, UserMinus, Wallet, CheckSquare } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit, canEditAmount, canView } from '@/lib/permissions'

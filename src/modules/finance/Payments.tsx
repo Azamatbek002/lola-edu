@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Calculator, Plus, Wallet, CreditCard, Banknote, AlertTriangle } from 'lucide-react'
+import { Bell, Calculator, Plus, Wallet, CreditCard, Banknote, AlertTriangle, Phone } from '@/components/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
@@ -298,7 +298,7 @@ export function DebtorsPage() {
                 sortable: false,
                 render: (r) => (
                   <div className="row" style={{ gap: 4, justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
-                    <a className="btn btn-sm btn-ghost" href={'tel:' + (r.s.parent_phone || r.s.phone)}>☎</a>
+                    <a className="btn btn-sm btn-ghost btn-icon" href={'tel:' + (r.s.parent_phone || r.s.phone)} aria-label={t('common.phone')}><Phone size={16} /></a>
                     <Button size="sm" onClick={() => remind([r])}>{t('pay.remind')}</Button>
                     {canEdit(me.role, 'payments') && <Button size="sm" variant="primary" onClick={() => setPay({ sid: r.sid, gid: g.id, amount: r.debt, month: r.since.charge.month })}>{t('pay.take')}</Button>}
                   </div>

@@ -1,7 +1,7 @@
 // Oylik to'lovlar: har bir guruh alohida, har o'quvchi yonida to'lov sanasi va holati
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, CalendarClock, CheckCircle2, Wallet, Calculator, Pencil } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CheckCircle2, Wallet, Calculator, Pencil } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
 import { canEdit, canEditAmount, canView } from '@/lib/permissions'

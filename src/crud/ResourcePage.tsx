@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Download, Pencil, Plus, Trash2 } from '@/components/icons'
 import { Button, Card, PageHead, SearchInput, useConfirm } from '@/components/ui'
 import { DataTable, type Column } from '@/components/DataTable'
 import { EntityForm, type FieldDef } from './EntityForm'

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckSquare, MessageSquare, Pencil, UserPlus, Star } from 'lucide-react'
+import { ArrowLeft, CheckSquare, MessageSquare, Pencil, UserPlus, Star, Clock, User, Door, CalendarDays, Coins, CalendarClock } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useMe } from '@/lib/auth'
 import { canEdit, canView } from '@/lib/permissions'
@@ -84,13 +84,13 @@ export default function GroupDetail() {
             <GroupStatusBadge s={g.status} />
           </div>
           <div className="muted mt" style={{ marginTop: 6 }}>{course?.name}</div>
-          <div className="row-wrap mt" style={{ gap: 18 }}>
-            <span>🕒 {groupSchedule(t, g)}</span>
-            <span>👤 {L.profiles.get(g.teacher_id || '')?.full_name ?? '—'}</span>
-            <span>🚪 {L.rooms.get(g.room_id || '')?.name ?? '—'}</span>
-            <span>📅 {date(g.start_date)}{g.end_date ? ' — ' + date(g.end_date) : ''}</span>
-            <span>💰 {money(gs.price(g))}</span>
-            <span>🗓 {t('pay.dueDate')}: {everyMonth(t, paymentDayFor(null, g, centerDay))}</span>
+          <div className="facts mt">
+            <span><Clock size={17} /> {groupSchedule(t, g)}</span>
+            <span><User size={17} /> {L.profiles.get(g.teacher_id || '')?.full_name ?? '—'}</span>
+            <span><Door size={17} /> {L.rooms.get(g.room_id || '')?.name ?? '—'}</span>
+            <span><CalendarDays size={17} /> {date(g.start_date)}{g.end_date ? ' — ' + date(g.end_date) : ''}</span>
+            <span><Coins size={17} /> {money(gs.price(g))}</span>
+            <span><CalendarClock size={17} /> {t('pay.dueDate')}: {everyMonth(t, paymentDayFor(null, g, centerDay))}</span>
           </div>
           <div className="row-wrap mt">
             {canView(me.role, 'attendance') && <Button variant="primary" icon={<CheckSquare size={15} />} onClick={() => nav(`/attendance?group=${g.id}&date=${todayISO()}`)}>{t('att.mark')}</Button>}

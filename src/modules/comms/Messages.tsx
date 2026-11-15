@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Send } from 'lucide-react'
+import { Send } from '@/components/icons'
 import { useT } from '@/lib/i18n'
 import { useBranchFilter } from '@/lib/auth'
 import { useRows } from '@/lib/data'

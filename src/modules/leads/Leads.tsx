@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Copy, KanbanSquare, List, Phone, Plus, UserCheck, PieChart } from 'lucide-react'
+import { Copy, KanbanSquare, List, Phone, Plus, UserCheck, PieChart, GraduationCap, User } from '@/components/icons'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts'
 import { useT } from '@/lib/i18n'
 import { useMe, useBranchFilter } from '@/lib/auth'
@@ -15,6 +15,7 @@ import { LEAD_STAGES, LEVELS, type Lead, type LeadStage } from '@/lib/types'
 import { STAGE_COLOR, useLookups, useOptions } from '../shared'
 import { SOURCES } from '../students/Students'
 import { EnrollModal } from '../students/StudentProfile'
+import { C, SERIES, TOOLTIP_STYLE } from '@/lib/palette'
 
 type View = 'kanban' | 'list' | 'stats'
 
@@ -137,10 +138,10 @@ export default function LeadsPage() {
                       <div className="row-wrap" style={{ marginTop: 6, gap: 4 }}>
                         <Badge>{l.source}</Badge>
                         {l.course_id && <Badge tone="purple">{L.courses.get(l.course_id)?.name.split(' ')[0]} {L.courses.get(l.course_id)?.level}</Badge>}
-                        {l.next_contact_at && !['won', 'lost'].includes(l.stage) && <Badge tone={l.next_contact_at < today ? 'red' : l.next_contact_at === today ? 'yellow' : 'gray'}>☎ {date(l.next_contact_at)}</Badge>}
-                        {l.trial_date && stage === 'trial_scheduled' && <Badge tone="blue">🎓 {date(l.trial_date)}</Badge>}
+                        {l.next_contact_at && !['won', 'lost'].includes(l.stage) && <Badge tone={l.next_contact_at < today ? 'red' : l.next_contact_at === today ? 'yellow' : 'gray'}><Phone size={12} /> {date(l.next_contact_at)}</Badge>}
+                        {l.trial_date && stage === 'trial_scheduled' && <Badge tone="blue"><GraduationCap size={12} /> {date(l.trial_date)}</Badge>}
                       </div>
-                      {l.assigned_to && <div className="small muted" style={{ marginTop: 4 }}>👤 {L.profiles.get(l.assigned_to)?.full_name}</div>}
+                      {l.assigned_to && <div className="small muted row" style={{ marginTop: 4, gap: 5 }}><User size={13} /> {L.profiles.get(l.assigned_to)?.full_name}</div>}
                     </div>
                   ))}
                 </div>
@@ -224,10 +225,10 @@ function LeadStats({ leads }: { leads: Lead[] }) {
             <BarChart data={sources} layout="vertical" margin={{ left: 10 }}>
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="source" width={90} fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ borderRadius: 10, background: 'var(--card)', border: '1px solid var(--border)' }} />
-              <Bar dataKey="leads" name={t('mk.leads')} fill="#94a3b8" radius={[0, 6, 6, 0]} />
+              <Tooltip cursor={{ fill: 'var(--hover)' }} contentStyle={TOOLTIP_STYLE} />
+              <Bar dataKey="leads" name={t('mk.leads')} fill={C.slate} radius={[0, 6, 6, 0]} />
               <Bar dataKey="won" name={t('mk.won')} radius={[0, 6, 6, 0]}>
-                {sources.map((s) => <Cell key={s.source} fill="#c0272d" />)}
+                {sources.map((s, i) => <Cell key={s.source} fill={SERIES[i % SERIES.length]} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
