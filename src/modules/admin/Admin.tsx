@@ -9,6 +9,7 @@ import { useToast } from '@/components/Toast'
 import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
 import { InstallApp } from '@/components/InstallApp'
+import { BackupCard } from './Backup'
 import { APP_VERSION, hardRefresh } from '@/lib/pwa'
 import { ArrowsClockwise } from '@/components/icons'
 import { DataTable } from '@/components/DataTable'
@@ -71,6 +72,7 @@ export function BranchesPage() {
 
 export function SettingsPage() {
   const t = useT()
+  const me = useMe()
   const toast = useToast()
   const confirm = useConfirm()
   const settings = useRows('settings')
@@ -120,6 +122,7 @@ export function SettingsPage() {
           ))}
           <div className="card-body small muted">{t('set.integrationHint')}</div>
         </Card>
+        {(me.role === 'owner' || me.role === 'admin') && <BackupCard />}
         {db.mode === 'demo' && (
           <Card title={t('set.data')} pad>
             <Button variant="danger" onClick={async () => (await confirm(t('set.resetDemo'))) && resetDemoData()}>{t('set.resetDemo')}</Button>

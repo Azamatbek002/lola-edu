@@ -87,5 +87,7 @@ export {
   ArrowsClockwise,
   Eye,
   EyeSlash,
+  ShieldCheck,
+  DownloadSimple,
   IconContext,
 } from '@phosphor-icons/react'
