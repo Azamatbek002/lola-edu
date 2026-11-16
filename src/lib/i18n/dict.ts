@@ -80,6 +80,8 @@ export const dict = {
   'common.language': ['Til', 'Язык', 'Dil'],
 
   // Ilovani o'rnatish (PWA)
+  'login.showPw': ["Parolni ko'rsatish", 'Показать пароль', 'Şifreyi göster'],
+  'login.hidePw': ['Parolni yashirish', 'Скрыть пароль', 'Şifreyi gizle'],
   'login.exitDemo': ['Haqiqiy tizimga qaytish', 'Вернуться в рабочую систему', 'Gerçek sisteme dön'],
   'app.privacy': ['Maxfiylik siyosati', 'Политика конфиденциальности', 'Gizlilik politikası'],
   'app.section': ['Ilova', 'Приложение', 'Uygulama'],

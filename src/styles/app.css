@@ -426,3 +426,9 @@ h3.link:hover { text-decoration: underline; text-decoration-color: var(--brand);
 /* Grafiklar */
 .recharts-cartesian-axis-tick text, .recharts-legend-item-text { fill: var(--muted) !important; color: var(--muted) !important; font-size: 12px; }
 .recharts-default-tooltip .recharts-tooltip-label { color: var(--text); font-weight: 600; }
+
+/* Parolni ko'rsatish tugmasi */
+.pw-wrap { position: relative; }
+.pw-wrap .input { padding-right: 44px; }
+.pw-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: 0; padding: 8px; border-radius: 8px; color: var(--muted); cursor: pointer; display: inline-flex; }
+.pw-toggle:hover { color: var(--text); background: var(--hover); }
