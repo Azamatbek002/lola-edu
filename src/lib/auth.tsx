@@ -69,14 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabase) {
         try {
           // Telefon raqam bilan kirish: telefon → email (profiles jadvalidan)
-          let email = loginStr.trim().toLowerCase()
+          // Telefonda avtotuzatish qo'shgan bo'shliqlar va bosh harflar e'tiborga olinmaydi
+          let email = loginStr.replace(/\s+/g, '').toLowerCase()
           if (!email.includes('@')) {
             const { data, error } = await supabase.rpc('email_by_phone', { p_phone: normalizePhone(email) })
             if (error) return authError(error)
             if (!data) return 'invalid'
             email = data as string
           }
-          const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+          let { data, error } = await supabase.auth.signInWithPassword({ email, password })
+          // Nusxa olingan parol oxiridagi tasodifiy bo'shliq bilan qayta urinish
+          if (error && password !== password.trim()) {
+            ;({ data, error } = await supabase.auth.signInWithPassword({ email, password: password.trim() }))
+          }
           if (error || !data.user) return authError(error)
           if (await loadProfile(data.user.id)) return null
           await supabase.auth.signOut()

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3, CalendarDays, CheckSquare, FlowerTulip, MessageSquare, Target, Wallet } from '@/components/icons'
+import { BarChart3, CalendarDays, CheckSquare, Eye, EyeSlash, FlowerTulip, MessageSquare, Target, Wallet } from '@/components/icons'
 import { useAuth } from '@/lib/auth'
 import { useT } from '@/lib/i18n'
 import { db, DEMO_SWITCH, SUPABASE_HOST } from '@/lib/db'
@@ -29,6 +29,7 @@ export default function LoginPage() {
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPw, setShowPw] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,10 +78,33 @@ export default function LoginPage() {
           </div>
           <form onSubmit={submit} className="col" style={{ gap: 12 }}>
             <Field label={t('login.email')}>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+                required
+              />
             </Field>
             <Field label={t('login.password')}>
-              <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
+              <div className="pw-wrap">
+                <Input
+                  type={showPw ? 'text' : 'password'}
+                  value={pass}
+                  onChange={(e) => setPass(e.target.value)}
+                  autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShowPw((v) => !v)} aria-label={t(showPw ? 'login.hidePw' : 'login.showPw')} title={t(showPw ? 'login.hidePw' : 'login.showPw')}>
+                  {showPw ? <EyeSlash size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </Field>
             {err && <div className="badge badge-red" style={{ padding: 8 }}>{err}</div>}
             <Button variant="primary" block disabled={busy} type="submit">

@@ -85,5 +85,7 @@ export {
   ChatText,
   FlowerTulip,
   ArrowsClockwise,
+  Eye,
+  EyeSlash,
   IconContext,
 } from '@phosphor-icons/react'
