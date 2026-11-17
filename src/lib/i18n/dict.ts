@@ -583,7 +583,7 @@ export const dict = {
   'set.absenceAlert': ["Darsga kelmaganda ota-onaga avtomatik xabar", 'Авто-уведомление родителям о пропуске', 'Devamsızlıkta veliye otomatik bildirim'],
   'set.debtAlert': ["Qarzdorlarga avtomatik eslatma", 'Авто-напоминание должникам', 'Borçlulara otomatik hatırlatma'],
   'backup.title': ['Zaxira nusxa', 'Резервная копия', 'Yedek'],
-  'backup.auto': ["Har kecha soat 02:00 da barcha ma'lumotlar parol bilan himoyalangan arxivga yig'iladi, serverda 30 kun saqlanadi va rahbarning Telegram'iga yuboriladi.", 'Каждую ночь в 02:00 все данные собираются в защищённый паролем архив, хранятся на сервере 30 дней и отправляются руководителю в Telegram.', 'Her gece 02:00\'de tüm veriler şifreli arşive alınır, sunucuda 30 gün saklanır ve yöneticinin Telegram\'ına gönderilir.'],
+  'backup.auto': ["Har kuni soat 02:00 va 14:00 da, shuningdek har bir yangilanishdan oldin barcha ma'lumotlar parol bilan himoyalangan arxivga yig'iladi, serverda 30 kun saqlanadi va rahbarning Telegram'iga yuboriladi.", 'Каждый день в 02:00 и 14:00, а также перед каждым обновлением все данные собираются в защищённый паролем архив, хранятся на сервере 30 дней и отправляются руководителю в Telegram.', 'Her gün 02:00 ve 14:00\'te ve her güncellemeden önce tüm veriler şifreli arşive alınır, sunucuda 30 gün saklanır ve yöneticinin Telegram\'ına gönderilir.'],
   'backup.telegram': ["Zaxira yuboriladigan Telegram (sizniki)", 'Telegram для резервных копий (ваш)', 'Yedeklerin gönderileceği Telegram (sizin)'],
   'backup.connect': ['Ulash', 'Подключить', 'Bağla'],
   'backup.now': ['Hozir zaxira olish', 'Сделать копию сейчас', 'Şimdi yedekle'],
