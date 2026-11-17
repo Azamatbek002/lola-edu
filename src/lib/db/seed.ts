@@ -102,6 +102,7 @@ export function buildSeed(): Seed {
       students.push({
         id,
         full_name: p.name,
+        pay_code: String(100000 + ((n * 7919 + 123457) % 900000)),
         phone: phone(),
         gender: p.gender,
         birth_date: addDays(today, -Math.floor((kid ? 8 : 17 + r() * 15) * 365 + r() * 300)),

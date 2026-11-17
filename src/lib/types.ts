@@ -81,6 +81,8 @@ export interface Student extends Base {
   telegram_chat_id?: string | null
   parent_telegram_chat_id?: string | null
   notes?: string | null
+  /** 6 xonali to'lov raqami (Payme/Click hisob raqami) — bazada avtomatik beriladi */
+  pay_code?: string | null
 }
 
 export type Level = 'A0' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'

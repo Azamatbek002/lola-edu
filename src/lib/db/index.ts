@@ -126,17 +126,33 @@ function localDB(): DB {
 
   const delay = () => new Promise((r) => setTimeout(r, 40))
 
+  /** Bazadagi trigger kabi: har bir o'quvchiga 6 xonali to'lov raqami (demo) */
+  function withPayCode(table: string, rows: any[]): any[] {
+    if (table !== 'students' || rows.every((r) => r.pay_code)) return rows
+    const used = new Set(rows.map((r) => r.pay_code).filter(Boolean))
+    const out = rows.map((r) => {
+      if (r.pay_code) return r
+      let c = ''
+      do c = String(100000 + Math.floor(Math.random() * 900000))
+      while (used.has(c))
+      used.add(c)
+      return { ...r, pay_code: c }
+    })
+    save(table, out)
+    return out
+  }
+
   return {
     mode: 'demo',
     async list(table) {
       await delay()
-      return [...load(table)]
+      return [...withPayCode(table, load(table))]
     },
     async insert(table, row) {
       const rows = load(table)
       const r = { id: uid(), created_at: new Date().toISOString(), ...row }
-      save(table, [...rows, r])
-      return r as any
+      save(table, withPayCode(table, [...rows, r]))
+      return load(table).find((x) => x.id === r.id) as any
     },
     async insertMany(table, newRows) {
       const rows = load(table)

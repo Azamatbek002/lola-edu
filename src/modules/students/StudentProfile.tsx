@@ -18,6 +18,7 @@ import { ATT_TONE, StudentStatusBadge, groupSchedule, methodLabel, useCenterDay,
 import { DueBadge, DueDate, EditChargeModal, PaymentDayModal, everyMonth } from '../finance/dues'
 import { studentFields } from './Students'
 import { PaymentModal, ReceiptModal } from '../finance/PaymentModal'
+import { PayCodeLine } from '../finance/OnlinePay'
 import type { Charge, Enrollment, Payment } from '@/lib/types'
 
 type Tab = 'groups' | 'payments' | 'attendance' | 'grades' | 'history'
@@ -104,6 +105,7 @@ export default function StudentProfile() {
                   {t('role.parent')}: <b>{s.parent_name}</b> · {phone(s.parent_phone)}
                 </div>
               )}
+              <PayCodeLine student={s} amount={due?.overdue || due?.next?.left || 0} />
               {s.notes && <p className="small muted mt" style={{ marginTop: 6 }}>{s.notes}</p>}
             </div>
           </div>

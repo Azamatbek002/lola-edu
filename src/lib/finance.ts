@@ -269,9 +269,9 @@ export function sumBy<T>(items: T[], key: (t: T) => string, val: (t: T) => numbe
 
 // ─── Onlayn to'lov havolalari ────────────────────────────────────────────────
 
-/** Payme checkout havolasi. Summa tiyinlarda yuboriladi. */
-export function paymeCheckoutUrl(merchantId: string, studentId: string, amount: number, returnUrl?: string): string {
-  const params = [`m=${merchantId}`, `ac.student_id=${studentId}`, `a=${Math.round(amount * 100)}`]
+/** Payme checkout havolasi. account — o'quvchining 6 xonali to'lov raqami. Summa tiyinlarda yuboriladi. */
+export function paymeCheckoutUrl(merchantId: string, account: string, amount: number, returnUrl?: string): string {
+  const params = [`m=${merchantId}`, `ac.student_id=${account}`, `a=${Math.round(amount * 100)}`]
   if (returnUrl) params.push(`c=${returnUrl}`)
   const b64 = btoa(params.join(';'))
   return `https://checkout.paycom.uz/${b64}`
@@ -280,15 +280,15 @@ export function paymeCheckoutUrl(merchantId: string, studentId: string, amount: 
 export function clickCheckoutUrl(
   serviceId: string,
   merchantId: string,
-  studentId: string,
+  account: string,
   amount: number,
   returnUrl?: string,
 ): string {
   const q = new URLSearchParams({
     service_id: serviceId,
     merchant_id: merchantId,
-    amount: String(amount),
-    transaction_param: studentId,
+    amount: String(Math.round(amount)),
+    transaction_param: account,
   })
   if (returnUrl) q.set('return_url', returnUrl)
   return `https://my.click.uz/services/pay?${q.toString()}`

@@ -13,6 +13,7 @@ import { clickCheckoutUrl, paymeCheckoutUrl, studentBalance } from '@/lib/financ
 import { ATT_TONE, groupSchedule, methodLabel, useCharges, useLookups } from '../shared'
 import { DueBadge, DueDate } from '../finance/dues'
 import { useToast } from '@/components/Toast'
+import { useOnlinePay } from '@/lib/onlinepay'
 import type { Student } from '@/lib/types'
 
 export function useMyStudent(): { student: Student | undefined; groupIds: string[] } {
@@ -38,15 +39,16 @@ function useNextLesson(groupIds: string[]) {
   }, [groups, groupIds])
 }
 
-export function PayOnline({ studentId, amount }: { studentId: string; amount: number }) {
+export function PayOnline({ student, amount }: { student: Student; amount: number }) {
   const t = useT()
+  const op = useOnlinePay()
   const [open, setOpen] = useState(false)
-  const [sum, setSum] = useState(String(Math.max(amount, 0) || ''))
-  const payme = import.meta.env.VITE_PAYME_MERCHANT_ID as string | undefined
-  const clickS = import.meta.env.VITE_CLICK_SERVICE_ID as string | undefined
-  const clickM = import.meta.env.VITE_CLICK_MERCHANT_ID as string | undefined
+  const [sum, setSum] = useState(String(Math.max(Math.round(amount), 0) || ''))
+  const code = student.pay_code ?? ''
   const ret = typeof location !== 'undefined' ? location.origin + '/my/payments' : undefined
-  const n = Number(sum) || 0
+  const n = Math.round(Number(sum) || 0)
+  const ready = n >= 1000 && !!code
+  const hasClick = !!(op.clickService && op.clickMerchant)
   return (
     <>
       <Button variant="primary" icon={<CreditCard size={16} />} onClick={() => setOpen(true)}>
@@ -54,27 +56,33 @@ export function PayOnline({ studentId, amount }: { studentId: string; amount: nu
       </Button>
       {open && (
         <Modal title={t('pay.online')} onClose={() => setOpen(false)}>
-          <Field label={t('common.amount')}>
-            <Input type="number" value={sum} onChange={(e) => setSum(e.target.value)} />
-          </Field>
-          <p className="small muted mt">{t('pay.onlineHint')}</p>
-          {!payme && !clickS && <div className="badge badge-yellow mt" style={{ whiteSpace: 'normal', padding: 10 }}>{t('pay.notConfigured')}</div>}
-          <div className="grid grid-2 mt">
-            <a
-              className={'btn btn-secondary' + (!payme || n < 1000 ? ' disabled' : '')}
-              style={{ padding: 14, pointerEvents: !payme || n < 1000 ? 'none' : undefined, opacity: !payme ? 0.5 : 1 }}
-              href={payme ? paymeCheckoutUrl(payme, studentId, n, ret) : '#'}
-            >
-              <b style={{ color: '#33cccc', fontSize: '1.1rem' }}>Payme</b>
-            </a>
-            <a
-              className="btn btn-secondary"
-              style={{ padding: 14, pointerEvents: !clickS || n < 1000 ? 'none' : undefined, opacity: !clickS ? 0.5 : 1 }}
-              href={clickS && clickM ? clickCheckoutUrl(clickS, clickM, studentId, n, ret) : '#'}
-            >
-              <b style={{ color: '#0073ff', fontSize: '1.1rem' }}>Click</b>
-            </a>
-          </div>
+          {code && (
+            <p className="small mb">
+              {t('pay.code')}: <b className="pay-code">{code}</b>
+            </p>
+          )}
+          {!op.enabled ? (
+            <div className="badge badge-yellow" style={{ whiteSpace: 'normal', padding: 10 }}>{t('pay.notConfigured')}</div>
+          ) : (
+            <>
+              <Field label={t('common.amount') + " (so'm)"}>
+                <Input type="number" inputMode="numeric" min={1000} step={1000} value={sum} onChange={(e) => setSum(e.target.value)} />
+              </Field>
+              <p className="small muted mt">{t('pay.onlineHint')}</p>
+              <div className="grid grid-2 mt">
+                {op.payme && (
+                  <a className={'btn pay-btn pay-payme' + (ready ? '' : ' is-disabled')} href={ready ? paymeCheckoutUrl(op.payme, code, n, ret) : undefined}>
+                    Payme
+                  </a>
+                )}
+                {hasClick && (
+                  <a className={'btn pay-btn pay-click' + (ready ? '' : ' is-disabled')} href={ready ? clickCheckoutUrl(op.clickService, op.clickMerchant, code, n, ret) : undefined}>
+                    Click
+                  </a>
+                )}
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </>
@@ -137,7 +145,7 @@ export default function PortalDashboard() {
           ) : (
             <p className="muted mb">{t('common.balance')}: {money(balance)}</p>
           )}
-          <PayOnline studentId={student.id} amount={-balance} />
+          <PayOnline student={student} amount={-balance} />
         </Card>
       </div>
     </>
@@ -342,7 +350,7 @@ export function MyPayments() {
   const due = dues.get(student.id)
   return (
     <>
-      <PageHead title={t('nav.myPayments')} actions={<PayOnline studentId={student.id} amount={-balance} />} />
+      <PageHead title={t('nav.myPayments')} actions={<PayOnline student={student} amount={-balance} />} />
       <div className="grid grid-stats mb">
         <Stat icon={<Wallet size={20} />} color={due?.overdue ? '#dc2626' : '#12a150'} label={t('common.balance')} value={money(balance)} sub={due?.overdue ? <span className="red">{t('pay.overdue')}: {money(due.overdue)}</span> : undefined} />
         {due?.next && <Stat icon={<CalendarDays size={20} />} color="#2563eb" label={t('pay.nextPayment')} value={date(due.next.charge.due_date)} sub={money(due.next.left)} />}

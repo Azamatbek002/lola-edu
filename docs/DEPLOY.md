@@ -98,18 +98,39 @@ select cron.schedule('daily-jobs', '0 4 * * *', $$
 $$);
 ```
 
-## 6. Payme
+## 6. Onlayn to'lov: umumiy tartib
 
-1. [business.payme.uz](https://business.payme.uz) da kassa oching.
-2. Kassa sozlamalari → **Endpoint URL**: `https://<PROJECT_REF>.supabase.co/functions/v1/payme`
-3. Hisob maydoni (account): **`student_id`**.
-4. Test kassa kaliti bilan [test.paycom.uz](https://test.paycom.uz) sandbox'ida barcha testlarni o'tkazing, so'ng prod kalitini `PAYME_KEY` ga qo'ying.
+- Har bir o'quvchiga **6 xonali to'lov raqami** avtomatik beriladi (`students.pay_code`). U o'quvchi profilida ko'rinadi.
+  Payme va Click'da hisob raqami sifatida shu raqam ishlatiladi.
+- Ota-onaga yuboriladigan havola: `https://<sayt>/pay/<raqam>?a=<summa>`. Kirish talab qilinmaydi, sahifada faqat yashirilgan ism («Gulshoda N.») ko'rinadi.
+  Bu havola qarz eslatmalari va to'lov kuni eslatmalariga (`{pay}`) hamda Telegram botdagi «Balans» javobiga avtomatik qo'shiladi, lekin faqat onlayn to'lov ulanganidan keyin.
+- **Ochiq ID'lar** (Payme kassa ID, Click service_id/merchant_id) ilovada kiritiladi: **Sozlamalar → Onlayn to'lov**. Qayta build qilish kerak emas.
+- **Maxfiy kalitlar** faqat Supabase → Edge Functions → Secrets'da saqlanadi:
+  `PAYME_KEY`, `PAYME_TEST_KEY` (faqat sinov vaqtida), `CLICK_SECRET_KEY`, `CLICK_SERVICE_ID`.
+- To'lov kelishi bilan `payments` jadvaliga yozuv qo'shiladi va o'quvchining eng eski qarziga yoziladi. Rahbar va buxgalter
+  bildirishnoma oladi, ota-onaga «To'lov qabul qilindi» xabari ketadi.
+- Mantiq `supabase/functions/_shared/pay-core.ts` faylida, testlari `src/lib/onlinepay.test.ts` da.
+
+## 6.1. Payme
+
+1. [business.payme.uz](https://business.payme.uz) orqali ariza bering va shartnoma tuzing (YaTT yoki MChJ, bank hisob raqami).
+2. Kassa sozlamalari:
+   - **Endpoint URL**: `https://<PROJECT_REF>.supabase.co/functions/v1/payme`
+   - **Hisob maydoni**: `student_id`, nomi «O'quvchi raqami», 6 ta raqam.
+3. Kassa **ID**sini ilovaga kiriting: Sozlamalar → Onlayn to'lov.
+4. **Sinov kaliti**ni `PAYME_TEST_KEY` secret'iga kiriting va [test.paycom.uz](https://test.paycom.uz) sandbox'ida barcha testlarni o'tkazing.
+   Sinov kaliti bilan kelgan to'lovlar haqiqiy to'lov sifatida yozilmaydi.
+5. Payme kassani faollashtirgach, **asosiy kalit**ni `PAYME_KEY` ga kiriting, `PAYME_TEST_KEY` ni esa o'chiring.
+6. Payme fiskal chek so'rasa: Sozlamalar → Onlayn to'lov → «Fiskal chek» bo'limiga IKPU (MXIK) kodi, o'lchov birligi kodi va QQS foizini kiriting.
+   Kodlar [tasnif.soliq.uz](https://tasnif.soliq.uz) saytida.
 
 ## 7. Click
 
-1. [merchant.click.uz](https://merchant.click.uz) da xizmat oching.
-2. **Prepare URL** va **Complete URL**: `https://<PROJECT_REF>.supabase.co/functions/v1/click`
-3. `merchant_trans_id` sifatida o'quvchi ID si yuboriladi (ilova buni avtomatik qiladi).
+1. [merchant.click.uz](https://merchant.click.uz) da xizmat oching (SHOP API).
+2. **Prepare URL** va **Complete URL**: `https://<PROJECT_REF>.supabase.co/functions/v1/click`.
+3. `service_id` va `merchant_id` ni ilovaga kiriting: Sozlamalar → Onlayn to'lov.
+4. `CLICK_SECRET_KEY` va `CLICK_SERVICE_ID` ni Supabase Secrets'ga kiriting.
+5. `merchant_trans_id`: o'quvchining 6 xonali to'lov raqami. Ilova va havolalar uni avtomatik yuboradi.
 
 ## 8. Telegram bot
 
