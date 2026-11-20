@@ -7,9 +7,10 @@ import { db, resetDemoData, supabase } from '@/lib/db'
 import { SMS_ENABLED, TELEGRAM_BOT_USERNAME } from '@/lib/config'
 import { useToast } from '@/components/Toast'
 import { ResourcePage } from '@/crud/ResourcePage'
-import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
+import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, Select, useConfirm } from '@/components/ui'
 import { InstallApp } from '@/components/InstallApp'
 import { BackupCard } from './Backup'
+import { AppLockCard } from '@/components/AppLock'
 import { OnlinePayCard } from '../finance/OnlinePay'
 import { useOnlinePay } from '@/lib/onlinepay'
 import { APP_VERSION, hardRefresh } from '@/lib/pwa'
@@ -114,6 +115,24 @@ export function SettingsPage() {
             <Checkbox label={t('set.absenceAlert')} checked={!!val.absence_alert} onChange={(x) => set({ absence_alert: x })} />
             <Checkbox label={t('set.debtAlert')} checked={!!val.debt_alert} onChange={(x) => set({ debt_alert: x })} />
           </div>
+          {(me.role === 'owner' || me.role === 'admin') && (
+            <>
+              <div className="divider" />
+              <h4 className="mb" style={{ marginBottom: 10 }}>{t('set.security')}</h4>
+              <div className="col" style={{ gap: 12 }}>
+                <Checkbox label={t('set.appLock')} checked={val.app_lock !== false} onChange={(x) => set({ app_lock: x })} />
+                {val.app_lock !== false && (
+                  <Field label={t('set.lockAfter')} hint={t('set.lockHint')}>
+                    <Select
+                      value={String(val.lock_minutes ?? 5)}
+                      onChange={(e) => set({ lock_minutes: Number(e.target.value) })}
+                      options={[0, 1, 5, 15, 60].map((m) => ({ value: String(m), label: m === 0 ? t('set.lockNow') : m === 60 ? t('set.lockHour') : t('set.lockMin').replace('{n}', String(m)) }))}
+                    />
+                  </Field>
+                )}
+              </div>
+            </>
+          )}
         </Card>
         <Card title={t('set.integrations')}>
           {integrations.map((i) => (
@@ -225,6 +244,7 @@ export function ProfilePage() {
             <Badge>{t('set.notConnected')}</Badge>
           )}
         </Card>
+        <AppLockCard />
         <Card pad>
           <div className="bold mb" style={{ marginBottom: 6 }}>{t('app.section')}</div>
           <div className="row between" style={{ flexWrap: 'wrap', gap: 10 }}>

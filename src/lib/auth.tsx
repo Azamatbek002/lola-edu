@@ -4,6 +4,7 @@ import type { Profile } from './types'
 import { seesAllBranches } from './permissions'
 import { normalizePhone } from './format'
 import { DEMO_LOGIN, DEMO_PASSWORD } from './config'
+import { clearActive, markActive, requestOffer } from './applock'
 
 interface AuthCtx {
   user: Profile | null
@@ -83,6 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ;({ data, error } = await supabase.auth.signInWithPassword({ email, password: password.trim() }))
           }
           if (error || !data.user) return authError(error)
+          // Parol bilan hozirgina kirdi — qulf so'ralmaydi; biometrikani ulash taklif qilinadi
+          markActive()
+          requestOffer()
           if (await loadProfile(data.user.id)) return null
           await supabase.auth.signOut()
           return 'no_profile'
@@ -100,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
+      markActive()
       setUser(p)
       return null
     },
@@ -113,12 +118,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
+      markActive()
+      requestOffer()
       await loadProfile(id)
     },
     [loadProfile],
   )
 
   const logout = useCallback(async () => {
+    clearActive()
     if (supabase) await supabase.auth.signOut()
     try {
       localStorage.removeItem(KEY)

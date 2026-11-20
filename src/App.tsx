@@ -1,12 +1,14 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { I18nProvider, useT } from '@/lib/i18n'
 import { ToastProvider } from '@/components/Toast'
-import { ConfirmProvider } from '@/components/ui'
+import { ConfirmProvider, Skeleton } from '@/components/ui'
+import { hideBoot } from '@/lib/boot'
 import { canView, type Module } from '@/lib/permissions'
 import { AppShell } from '@/layout/AppShell'
+import { AppLockProvider } from '@/components/AppLock'
 import { STAFF_NAV, PORTAL_NAV } from '@/layout/nav'
 import LoginPage from '@/modules/auth/LoginPage'
 import ApplyPage from '@/modules/public/Apply'
@@ -50,9 +52,25 @@ const MyPayments = lazy(() => import('@/modules/portal/Portal').then((m) => ({ d
 
 const qc = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, retry: 1 } } })
 
+/** Sahifa yuklanayotganda: kontent shaklidagi skelet (tez yuklansa umuman ko'rinmaydi) */
 function Loading() {
   const t = useT()
-  return <div className="empty">{t('common.loading')}</div>
+  return (
+    <div className="page-skel" aria-busy="true" aria-label={t('common.loading')}>
+      <span className="skel skel-title" />
+      <div className="grid grid-stats mb">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="card stat">
+            <span className="skel skel-sub" />
+            <span className="skel skel-val" />
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <Skeleton rows={5} />
+      </div>
+    </div>
+  )
 }
 
 /** Sahifa nomi menyudan olinadi */
@@ -81,6 +99,7 @@ function Protected() {
   const portal = user.role === 'student' || user.role === 'parent'
   const g = (m: Module, el: ReactNode) => <Guard module={m}>{el}</Guard>
   return (
+    <AppLockProvider>
     <AppShell title={title}>
       <Suspense fallback={<Loading />}>
         <Routes>
@@ -130,12 +149,16 @@ function Protected() {
         </Routes>
       </Suspense>
     </AppShell>
+    </AppLockProvider>
   )
 }
 
 function Root() {
   const { ready } = useAuth()
-  if (!ready) return <Loading />
+  useEffect(() => {
+    if (ready) requestAnimationFrame(() => hideBoot())
+  }, [ready])
+  if (!ready) return null
   return (
     <Routes>
       <Route path="/apply" element={<ApplyPage />} />
