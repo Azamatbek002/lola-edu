@@ -88,6 +88,15 @@ Deno.serve(async (req) => {
     .select('id, full_name')
     .or(`telegram_chat_id.eq.${chat},parent_telegram_chat_id.eq.${chat}`)
 
+  if (!students?.length) {
+    // Xodim (rahbar, administrator, o'qituvchi) — bildirishnomalar va zaxira nusxalar shu yerga keladi
+    const { data: staff } = await db.from('profiles').select('full_name').eq('telegram_chat_id', chat).limit(1).maybeSingle()
+    if (staff) {
+      await send(chat, `✅ ${staff.full_name}, Telegram ulangan. Bildirishnomalar va zaxira nusxalar shu yerga keladi.`, { reply_markup: { remove_keyboard: true } })
+      return new Response('ok')
+    }
+  }
+
   if (text === '/start' || !students?.length) {
     await send(chat, "Assalomu alaykum! <b>Lola Edu Türk Dili Markazi</b> botiga xush kelibsiz.\n\nDavom etish uchun telefon raqamingizni yuboring 👇", {
       reply_markup: { keyboard: [[{ text: '📱 Raqamni yuborish', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true },
@@ -98,10 +107,17 @@ Deno.serve(async (req) => {
   const ids = students.map((s) => s.id)
   if (/balans|\/balance/i.test(text)) {
     // Har bir o'quvchi: muddati o'tgan qarz va keyingi to'lov sanasi (public.charge_status)
-    const [{ data: bal }, { data: st }] = await Promise.all([
+    const [{ data: bal }, { data: st }, { data: codes }, { data: op }] = await Promise.all([
       db.from('student_balances').select('student_id, full_name, balance').in('student_id', ids),
       db.from('charge_status').select('student_id, group_id, due_date, remaining, state').in('student_id', ids).neq('state', 'paid').order('due_date'),
+      db.from('students').select('id, pay_code').in('id', ids),
+      db.from('settings').select('value').eq('key', 'online_pay').maybeSingle(),
     ])
+    // Onlayn to'lov ulangan bo'lsa — har bir o'quvchi uchun to'lov sahifasi havolasi
+    const opv = (op?.value ?? {}) as Record<string, string>
+    const payOn = !!(opv.payme_merchant_id || (opv.click_service_id && opv.click_merchant_id))
+    const site = (opv.site_url || 'https://lola-edu.vercel.app').replace(/\/+$/, '')
+    const codeOf = new Map((codes ?? []).map((c: any) => [c.id, c.pay_code as string]))
     const gids = [...new Set((st ?? []).map((c: any) => c.group_id))]
     const { data: gr } = gids.length ? await db.from('groups').select('id, name').in('id', gids) : { data: [] as { id: string; name: string }[] }
     const gname = new Map((gr ?? []).map((g) => [g.id, g.name]))
@@ -118,6 +134,11 @@ Deno.serve(async (req) => {
       }
       if (next) lines.push(`📅 Keyingi to'lov: <b>${ddmm((next as any).due_date)}</b> — ${money(Number((next as any).remaining))}${(next as any).state === 'today' ? ' (bugun)' : ''}`)
       if (!overdue.length && !next) lines.push(b.balance > 0 ? `✅ To'langan. Oldindan: ${money(b.balance)}` : "✅ Hammasi to'langan")
+      const code = codeOf.get(b.student_id)
+      if (payOn && code) {
+        const toPay = overdue.length ? overdue.reduce((x: number, c: any) => x + Number(c.remaining), 0) : next ? Number((next as any).remaining) : 0
+        lines.push(`💳 <a href="${site}/pay/${code}${toPay > 0 ? '?a=' + Math.round(toPay) : ''}">Payme yoki Click orqali to'lash</a> (raqam: ${code})`)
+      }
       return lines.join('\n')
     })
     await send(chat, `💰 <b>To'lovlar</b>\n\n${blocks.join('\n\n')}`, MENU)

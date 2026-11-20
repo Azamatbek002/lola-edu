@@ -432,3 +432,16 @@ h3.link:hover { text-decoration: underline; text-decoration-color: var(--brand);
 .pw-wrap .input { padding-right: 44px; }
 .pw-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: none; border: 0; padding: 8px; border-radius: 8px; color: var(--muted); cursor: pointer; display: inline-flex; }
 .pw-toggle:hover { color: var(--text); background: var(--hover); }
+
+/* ─── Ochiq to'lov sahifasi (/pay/:code) ─────────────────────────────────── */
+.pay-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; background: linear-gradient(165deg, var(--bg) 0%, var(--brand-50) 100%); }
+.pay-card { width: 100%; max-width: 440px; padding: 24px; }
+.pay-who { background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.pay-name { font-family: 'Lora', Georgia, serif; font-size: 1.35rem; font-weight: 600; margin: 2px 0 4px; }
+.pay-btn { justify-content: center; padding: 14px; font-size: 1.1rem; font-weight: 700; border: 1px solid var(--border); background: var(--card); }
+.pay-btn.pay-payme { color: #00a7a7; }
+.pay-btn.pay-click { color: #0a6cff; }
+.pay-btn:hover { border-color: currentColor; }
+.pay-btn.is-disabled { opacity: 0.45; pointer-events: none; }
+.pay-code { font-variant-numeric: tabular-nums; letter-spacing: 0.06em; font-weight: 700; }
+.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }

@@ -10,6 +10,8 @@ import { ResourcePage } from '@/crud/ResourcePage'
 import { Avatar, Badge, Button, Card, Checkbox, Field, Input, PageHead, useConfirm } from '@/components/ui'
 import { InstallApp } from '@/components/InstallApp'
 import { BackupCard } from './Backup'
+import { OnlinePayCard } from '../finance/OnlinePay'
+import { useOnlinePay } from '@/lib/onlinepay'
 import { APP_VERSION, hardRefresh } from '@/lib/pwa'
 import { ArrowsClockwise } from '@/components/icons'
 import { DataTable } from '@/components/DataTable'
@@ -86,11 +88,11 @@ export function SettingsPage() {
     else await m.create({ key: 'center', value: val })
     toast.success(t('common.saved'))
   }
-  const env = import.meta.env
+  const op = useOnlinePay()
   const integrations = [
     { name: 'Supabase', ok: db.mode === 'supabase' },
-    { name: 'Payme', ok: !!env.VITE_PAYME_MERCHANT_ID },
-    { name: 'Click', ok: !!env.VITE_CLICK_SERVICE_ID },
+    { name: 'Payme', ok: !!op.payme },
+    { name: 'Click', ok: !!(op.clickService && op.clickMerchant) },
     { name: 'Telegram bot', ok: !!TELEGRAM_BOT_USERNAME },
     { name: 'Eskiz SMS', ok: SMS_ENABLED },
   ]
@@ -122,6 +124,7 @@ export function SettingsPage() {
           ))}
           <div className="card-body small muted">{t('set.integrationHint')}</div>
         </Card>
+        {(me.role === 'owner' || me.role === 'admin') && <OnlinePayCard />}
         {(me.role === 'owner' || me.role === 'admin') && <BackupCard />}
         {db.mode === 'demo' && (
           <Card title={t('set.data')} pad>

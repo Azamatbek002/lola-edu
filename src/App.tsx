@@ -10,6 +10,7 @@ import { AppShell } from '@/layout/AppShell'
 import { STAFF_NAV, PORTAL_NAV } from '@/layout/nav'
 import LoginPage from '@/modules/auth/LoginPage'
 import ApplyPage from '@/modules/public/Apply'
+import PayPage from '@/modules/public/Pay'
 import Dashboard from '@/modules/dashboard/Dashboard'
 
 const StudentsPage = lazy(() => import('@/modules/students/Students'))
@@ -138,6 +139,8 @@ function Root() {
   return (
     <Routes>
       <Route path="/apply" element={<ApplyPage />} />
+      <Route path="/pay/:code" element={<PayPage />} />
+      <Route path="/pay/:code/:status" element={<PayPage />} />
       <Route path="/*" element={<Protected />} />
     </Routes>
   )
