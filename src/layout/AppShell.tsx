@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { Bell, Checks, LogOut, Menu, Moon, Sun, User } from '@/components/icons'
 import { useAuth, useMe } from '@/lib/auth'
@@ -11,6 +12,7 @@ import { PORTAL_NAV, STAFF_NAV, type NavSection } from './nav'
 import { dateTime, todayLong } from '@/lib/format'
 import { InstallApp } from '@/components/InstallApp'
 import type { Lang } from '@/lib/types'
+import { reducedMotion, useExitAnimation } from '@/lib/motion'
 
 export function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -30,6 +32,17 @@ export function useTheme() {
     }
   }, [theme])
   return [theme, setTheme] as const
+}
+
+/** Mavzuni almashtirish: brauzer qo'llasa — butun ekran yumshoq o'tadi (View Transitions) */
+function switchTheme(next: 'light' | 'dark', set: (t: 'light' | 'dark') => void) {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
+  const apply = () => {
+    document.documentElement.dataset.theme = next
+    flushSync(() => set(next))
+  }
+  if (doc.startViewTransition && !reducedMotion()) doc.startViewTransition(apply)
+  else apply()
 }
 
 export function LangSwitch() {
@@ -72,7 +85,7 @@ function NotificationBell() {
       <Button variant="ghost" icon={<Bell size={19} />} onClick={() => setOpen((o) => !o)} aria-label={t('nav.notifications')} />
       {unread.length > 0 && <span className="notif-count">{unread.length}</span>}
       {open && (
-        <div className="popover">
+        <NotifPopover>
           <div className="card-head">
             <h3>{t('nav.notifications')}</h3>
             {unread.length > 0 && (
@@ -104,8 +117,18 @@ function NotificationBell() {
               </div>
             ))}
           </div>
-        </div>
+        </NotifPopover>
       )}
+    </div>
+  )
+}
+
+function NotifPopover({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useExitAnimation(ref)
+  return (
+    <div className="popover" ref={ref}>
+      {children}
     </div>
   )
 }
@@ -119,7 +142,16 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const loc = useLocation()
   const branches = useRows('branches')
   const isPortal = me.role === 'student' || me.role === 'parent'
-  useEffect(() => setOpen(false), [loc.pathname])
+  useEffect(() => {
+    setOpen(false)
+    // Yangi sahifa doim yuqoridan ochiladi
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
+  }, [loc.pathname])
+  // Menyu ochiq paytda orqadagi sahifa aylanmaydi
+  useEffect(() => {
+    document.documentElement.classList.toggle('drawer-open', open)
+    return () => document.documentElement.classList.remove('drawer-open')
+  }, [open])
 
   const sections: NavSection[] = useMemo(() => {
     const src = isPortal ? PORTAL_NAV : STAFF_NAV
@@ -170,7 +202,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
           </button>
         </div>
       </aside>
-      <div className={'backdrop' + (open ? ' open' : '')} onClick={() => setOpen(false)} />
+      <div className={'backdrop' + (open ? ' open' : '')} onClick={() => setOpen(false)} aria-hidden="true" />
       <div className="main">
         <header className="topbar">
           <Button variant="ghost" className="menu-btn" icon={<Menu size={22} />} onClick={() => setOpen(true)} aria-label="menu" />
@@ -198,14 +230,25 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
           <span className="hide-sm">
             <LangSwitch />
           </span>
-          <Button variant="ghost" icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label={t('common.darkMode')} />
+          <Button
+            variant="ghost"
+            className="theme-btn"
+            icon={theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            onClick={() => switchTheme(theme === 'dark' ? 'light' : 'dark', setTheme)}
+            aria-label={t('common.darkMode')}
+          />
           <InstallApp compact />
           <NotificationBell />
           <NavLink to="/profile" className="btn btn-ghost btn-icon" aria-label={t('nav.profile')} style={{ display: 'inline-flex' }}>
             <User size={18} />
           </NavLink>
         </header>
-        <main className="content">{children}</main>
+        <main className="content">
+          {/* Har bir sahifa o'z kirish animatsiyasi bilan ochiladi */}
+          <div className="page" key={loc.pathname}>
+            {children}
+          </div>
+        </main>
       </div>
       <nav className="bottom-nav">
         {bottom.map((i) => (

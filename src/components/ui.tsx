@@ -1,7 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ButtonHTMLAttributes } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Search, Inbox } from './icons'
 import { initials } from '@/lib/format'
 import { useT } from '@/lib/i18n'
+import { softEnter, useExitAnimation, useInitialLoading } from '@/lib/motion'
 
 // ─── Button ──────────────────────────────────────────
 type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'success' | 'danger'
@@ -136,6 +138,7 @@ const STAT_TONE: Record<string, string> = {
   '#64748b': 'var(--muted)',
 }
 export function Stat({ icon, label, value, color = 'var(--brand)', sub }: { icon: ReactNode; label: string; value: ReactNode; color?: string; sub?: ReactNode }) {
+  const loading = useInitialLoading()
   return (
     <div className="card stat">
       <div className="stat-top">
@@ -144,14 +147,42 @@ export function Stat({ icon, label, value, color = 'var(--brand)', sub }: { icon
         </span>
         <span className="lbl">{label}</span>
       </div>
-      <div className="val">{value}</div>
-      {sub && <div className="sub">{sub}</div>}
+      {loading ? (
+        <>
+          <span className="skel skel-val" />
+          <span className="skel skel-sub" />
+        </>
+      ) : (
+        <>
+          <div className="val">{value}</div>
+          {sub && <div className="sub">{sub}</div>}
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Yuklanish skeleti: kontent shaklidagi yumshoq miltillovchi chiziqlar */
+export function Skeleton({ rows = 4, avatar = true }: { rows?: number; avatar?: boolean }) {
+  return (
+    <div className="skel-list" aria-busy="true" aria-live="polite">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="skel-row" style={{ ['--i' as string]: i }}>
+          {avatar && <span className="skel skel-circle" />}
+          <div className="skel-lines">
+            <span className="skel" style={{ width: `${62 - ((i * 13) % 24)}%` }} />
+            <span className="skel skel-thin" style={{ width: `${38 - ((i * 7) % 14)}%` }} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
 
 export function Empty({ text, icon }: { text?: string; icon?: ReactNode }) {
   const t = useT()
+  // Ma'lumot hali kelmagan bo'lsa — "bo'sh" emas, skelet ko'rsatamiz (bo'sh holat miltillamaydi)
+  if (useInitialLoading()) return <Skeleton rows={3} />
   return (
     <div className="empty">
       {icon ?? <Inbox size={34} />}
@@ -169,13 +200,45 @@ export function Progress({ value, color }: { value: number; color?: string }) {
 }
 
 export function Tabs<K extends string>({ tabs, value, onChange }: { tabs: { key: K; label: ReactNode }[]; value: K; onChange: (k: K) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [ind, setInd] = useState<{ x: number; w: number } | null>(null)
+  // Birinchi o'lchovdan keyingina siljish animatsiyasi yoqiladi (ochilishda chiziq "uchib" kelmasin)
+  const [anim, setAnim] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setAnim(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+  // Faol tab ostidagi chiziq: bir tabdan ikkinchisiga siljib o'tadi
+  useLayoutEffect(() => {
+    const box = ref.current
+    if (!box) return
+    const measure = () => {
+      const on = box.querySelector<HTMLElement>('button.on')
+      setInd(on ? { x: on.offsetLeft, w: on.offsetWidth } : null)
+    }
+    measure()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null
+    ro?.observe(box)
+    document.fonts?.ready.then(measure).catch(() => undefined)
+    return () => ro?.disconnect()
+  }, [value, tabs.length])
+  // Tab almashganda ostidagi kontent yumshoq paydo bo'ladi
+  const first = useRef(true)
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    softEnter(ref.current?.nextElementSibling)
+  }, [value])
   return (
-    <div className="tabs" role="tablist">
+    <div className="tabs" role="tablist" ref={ref}>
       {tabs.map((tb) => (
-        <button key={tb.key} role="tab" className={value === tb.key ? 'on' : ''} onClick={() => onChange(tb.key)}>
+        <button key={tb.key} type="button" role="tab" aria-selected={value === tb.key} className={value === tb.key ? 'on' : ''} onClick={() => onChange(tb.key)}>
           {tb.label}
         </button>
       ))}
+      <span className={'tabs-ind' + (ind ? '' : ' hidden') + (anim ? ' anim' : '')} style={ind ? { transform: `translateX(${ind.x}px)`, width: ind.w } : undefined} />
     </div>
   )
 }
@@ -193,28 +256,54 @@ export function PageHead({ title, subtitle, actions }: { title?: ReactNode; subt
 }
 
 // ─── Modal ───────────────────────────────────────────
+// Bir nechta modal ustma-ust ochilganda sahifa aylantirilishi to'g'ri qulflanadi
+let openModals = 0
+function lockScroll() {
+  if (openModals++ === 0) document.documentElement.classList.add('modal-open')
+}
+function unlockScroll() {
+  if (--openModals <= 0) {
+    openModals = 0
+    document.documentElement.classList.remove('modal-open')
+  }
+}
+
 export function Modal({ title, onClose, children, footer, wide }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const bg = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
+  useExitAnimation(bg)
+  const close = useRef(onClose)
+  close.current = onClose
   useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const h = (e: KeyboardEvent) => {
+      // Faqat eng ustdagi modal Esc'ga javob beradi
+      if (e.key !== 'Escape') return
+      const all = document.querySelectorAll('.modal-bg:not(.is-leaving)')
+      if (all[all.length - 1] === bg.current) close.current()
+    }
     document.addEventListener('keydown', h)
-    document.body.style.overflow = 'hidden'
+    lockScroll()
+    bg.current?.querySelector<HTMLElement>('.modal')?.focus({ preventScroll: true })
     return () => {
       document.removeEventListener('keydown', h)
-      document.body.style.overflow = ''
+      unlockScroll()
     }
-  }, [onClose])
-  return (
-    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={'modal' + (wide ? ' wide' : '')} ref={ref} role="dialog" aria-modal="true">
-        <div className="modal-head">
+  }, [])
+  return createPortal(
+    <div className="modal-bg" ref={bg} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className={'modal' + (wide ? ' wide' : '')} role="dialog" aria-modal="true" tabIndex={-1}>
+        <div className={'modal-head' + (scrolled ? ' scrolled' : '')}>
           <h2>{title}</h2>
           <Button variant="ghost" icon={<X size={18} />} onClick={onClose} aria-label="close" />
         </div>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body" ref={body} onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 2)}>
+          {children}
+        </div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

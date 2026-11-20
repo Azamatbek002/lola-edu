@@ -7,6 +7,7 @@ import '@fontsource/lora/600-italic.css'
 import './styles/app.css'
 import { IconContext } from './components/icons'
 import { initInstallPrompt, initServiceWorker } from './lib/pwa'
+import { hideBoot } from './lib/boot'
 
 initInstallPrompt()
 initServiceWorker()
@@ -17,6 +18,9 @@ try {
 } catch {
   /* ignore */
 }
+
+// Ehtiyot uchun: biror sabab bilan kechiksa ham ochilish ekrani 6 soniyadan keyin yo'qoladi
+setTimeout(hideBoot, 6000)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
