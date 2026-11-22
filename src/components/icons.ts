@@ -90,4 +90,7 @@ export {
   ShieldCheck,
   DownloadSimple,
   IconContext,
+  Fingerprint,
+  ScanSmiley,
+  LockSimple,
 } from '@phosphor-icons/react'

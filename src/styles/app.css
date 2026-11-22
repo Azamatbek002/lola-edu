@@ -713,6 +713,40 @@ h3.link:hover { text-decoration: underline; text-decoration-color: var(--brand);
 .pay-code { font-variant-numeric: tabular-nums; letter-spacing: 0.06em; font-weight: 700; }
 .mono { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 
+/* ─── Ilova qulfi (barmoq izi / Face ID / parol) ─────── */
+@keyframes lock-ring { 0% { transform: scale(1); opacity: 0.45; } 100% { transform: scale(1.45); opacity: 0; } }
+@keyframes lock-out { to { opacity: 0; transform: scale(1.04); } }
+@keyframes lock-scan { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.lock-screen {
+  position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center;
+  padding: calc(24px + env(safe-area-inset-top)) var(--sp-5) calc(24px + env(safe-area-inset-bottom));
+  background: radial-gradient(120% 80% at 50% 0%, var(--card-2) 0%, var(--bg) 60%), var(--bg);
+  animation: fade-in var(--t-3) var(--ease-out) both; overflow-y: auto;
+}
+.lock-card { width: 100%; max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); text-align: center; animation: rise-lg 600ms var(--ease-out) 60ms both; }
+.lock-brand { display: flex; align-items: center; gap: var(--sp-2); font-family: var(--serif); font-weight: 600; font-size: 1.05rem; margin-bottom: var(--sp-2); }
+.lock-brand img { width: 28px; height: 28px; }
+.lock-bio {
+  position: relative; width: 108px; height: 108px; border-radius: 50%; border: 1px solid var(--border); background: var(--card);
+  color: var(--brand); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-md); margin-top: var(--sp-2);
+  transition: transform var(--t-2) var(--ease-out), box-shadow var(--t-2) var(--ease-out), border-color var(--t-2);
+}
+.lock-bio::after { content: ''; position: absolute; inset: -1px; border-radius: 50%; border: 2px solid var(--brand); opacity: 0; animation: lock-ring 2.2s var(--ease-out) 0.6s infinite; pointer-events: none; }
+.lock-bio:hover { border-color: var(--brand-100); box-shadow: var(--shadow-lg); }
+.lock-bio:active { transform: scale(0.95); }
+.lock-bio:focus-visible { outline: none; box-shadow: var(--ring), var(--shadow-md); }
+.lock-bio.busy svg { animation: lock-scan 1s ease-in-out infinite; }
+.lock-form { width: 100%; display: flex; flex-direction: column; gap: var(--sp-3); }
+.lock-err { color: var(--red); background: var(--red-bg); border-radius: var(--r-md); padding: 8px 12px; font-size: var(--fs-sm); width: 100%; animation: fade-in var(--t-2) both; }
+.lock-link { background: none; border: 0; cursor: pointer; font-weight: 600; font-size: var(--fs-md); color: var(--text); display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; border-radius: var(--r-sm); transition: background-color var(--t-1), color var(--t-1); }
+.lock-link:hover { background: var(--hover); }
+.lock-link.muted { color: var(--muted); font-weight: 500; font-size: var(--fs-sm); margin-top: var(--sp-2); }
+.lock-screen.is-leaving { animation: fade-out 420ms var(--ease-in-out) forwards; }
+.lock-screen.is-leaving .lock-card { animation: lock-out 420ms var(--ease-in-out) forwards; }
+.lock-offer { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--sp-3); padding: var(--sp-2) 0; }
+.lock-offer-ico { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-50); color: var(--brand); }
+.lock-offer p { color: var(--text-2); max-width: 380px; }
+
 /* ─── "Kamroq harakat" sozlamasi: animatsiyalar o'chadi, ma'no saqlanadi ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

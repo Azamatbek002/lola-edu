@@ -8,6 +8,7 @@ import { ConfirmProvider, Skeleton } from '@/components/ui'
 import { hideBoot } from '@/lib/boot'
 import { canView, type Module } from '@/lib/permissions'
 import { AppShell } from '@/layout/AppShell'
+import { AppLockProvider } from '@/components/AppLock'
 import { STAFF_NAV, PORTAL_NAV } from '@/layout/nav'
 import LoginPage from '@/modules/auth/LoginPage'
 import ApplyPage from '@/modules/public/Apply'
@@ -98,6 +99,7 @@ function Protected() {
   const portal = user.role === 'student' || user.role === 'parent'
   const g = (m: Module, el: ReactNode) => <Guard module={m}>{el}</Guard>
   return (
+    <AppLockProvider>
     <AppShell title={title}>
       <Suspense fallback={<Loading />}>
         <Routes>
@@ -147,6 +149,7 @@ function Protected() {
         </Routes>
       </Suspense>
     </AppShell>
+    </AppLockProvider>
   )
 }
 
