@@ -64,6 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           return 'invalid'
         }
+        // Hozirgina parol bilan kirdi — sahifa qayta yuklangach qulf so'ralmaydi
+        markActive()
         window.location.replace('/')
         return null
       }
