@@ -124,7 +124,15 @@ function localDB(): DB {
     }
   }
 
-  const delay = () => new Promise((r) => setTimeout(r, 40))
+  // Demo'da tarmoqni taqlid qilish; sekin internetni sinash uchun: localStorage 'lola:demo-delay' = 1500
+  const delayMs = (() => {
+    try {
+      return Math.min(5000, Number(localStorage.getItem('lola:demo-delay')) || 40)
+    } catch {
+      return 40
+    }
+  })()
+  const delay = () => new Promise((r) => setTimeout(r, delayMs))
 
   /** Bazadagi trigger kabi: har bir o'quvchiga 6 xonali to'lov raqami (demo) */
   function withPayCode(table: string, rows: any[]): any[] {
