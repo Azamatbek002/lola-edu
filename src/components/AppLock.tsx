@@ -116,10 +116,12 @@ export function AppLockProvider({ children }: { children: ReactNode }) {
     }
   }, [available, active, locked, me.id])
 
-  const unlock = useCallback(() => {
+  const unlock = useCallback((viaPassword?: boolean) => {
     markActive()
+    // Parol bilan ochdi va bu qurilmada biometrika hali ulanmagan — yoqishni taklif qilamiz
+    if (viaPassword && !isEnrolled(me.id)) wantsOffer.current = true
     setLocked(false)
-  }, [])
+  }, [me.id])
 
   const enroll = useCallback(async () => {
     try {
@@ -187,7 +189,7 @@ async function checkPassword(email: string | null | undefined, password: string)
   }
 }
 
-function LockScreen({ enrolled, onUnlock, onLogout, onBiometricGone }: { enrolled: boolean; onUnlock: () => void; onLogout: () => void; onBiometricGone: () => void }) {
+function LockScreen({ enrolled, onUnlock, onLogout, onBiometricGone }: { enrolled: boolean; onUnlock: (viaPassword?: boolean) => void; onLogout: () => void; onBiometricGone: () => void }) {
   const t = useT()
   const me = useMe()
   const ref = useRef<HTMLDivElement>(null)
@@ -250,7 +252,7 @@ function LockScreen({ enrolled, onUnlock, onLogout, onBiometricGone }: { enrolle
     setErr('')
     const res = await checkPassword(me.email, pw)
     setBusy(false)
-    if (res === 'ok') return onUnlock()
+    if (res === 'ok') return onUnlock(true)
     if (res === 'network') return setErr(t('login.network'))
     tries.current += 1
     setPw('')
