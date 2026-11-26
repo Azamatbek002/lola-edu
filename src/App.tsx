@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient as qc } from '@/lib/queryClient'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { I18nProvider, useT } from '@/lib/i18n'
 import { ToastProvider } from '@/components/Toast'
@@ -14,6 +15,7 @@ import LoginPage from '@/modules/auth/LoginPage'
 import ApplyPage from '@/modules/public/Apply'
 import PayPage from '@/modules/public/Pay'
 import Dashboard from '@/modules/dashboard/Dashboard'
+import { useAnswerUploader } from '@/lib/speaking/uploader'
 
 const StudentsPage = lazy(() => import('@/modules/students/Students'))
 const StudentProfile = lazy(() => import('@/modules/students/StudentProfile'))
@@ -49,8 +51,11 @@ const MyAttendance = lazy(() => import('@/modules/portal/Portal').then((m) => ({
 const MyGrades = lazy(() => import('@/modules/portal/Portal').then((m) => ({ default: m.MyGrades })))
 const MyHomework = lazy(() => import('@/modules/portal/Portal').then((m) => ({ default: m.MyHomework })))
 const MyPayments = lazy(() => import('@/modules/portal/Portal').then((m) => ({ default: m.MyPayments })))
-
-const qc = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true, retry: 1 } } })
+const SpeakingPage = lazy(() => import('@/modules/speaking/Speaking'))
+const SpeakingStart = lazy(() => import('@/modules/speaking/Start'))
+const SpeakingGrade = lazy(() => import('@/modules/speaking/Grade'))
+const SpeakingVariant = lazy(() => import('@/modules/speaking/VariantEditor'))
+const ExamPage = lazy(() => import('@/modules/speaking/Exam'))
 
 /** Sahifa yuklanayotganda: kontent shaklidagi skelet (tez yuklansa umuman ko'rinmaydi) */
 function Loading() {
@@ -108,6 +113,7 @@ function Protected() {
           <Route path="/materials" element={g('materials', <MaterialsPage />)} />
           <Route path="/events" element={g('events', <EventsPage />)} />
           <Route path="/feedback" element={g('feedback', <FeedbackPage />)} />
+          <Route path="/speaking" element={g('speaking', <SpeakingPage />)} />
           {portal ? (
             <>
               <Route path="/my/schedule" element={<MySchedule />} />
@@ -115,6 +121,7 @@ function Protected() {
               <Route path="/my/grades" element={<MyGrades />} />
               <Route path="/my/homework" element={<MyHomework />} />
               <Route path="/my/payments" element={<MyPayments />} />
+              {user.role === 'student' && <Route path="/speaking/start/:variantId" element={<SpeakingStart />} />}
             </>
           ) : (
             <>
@@ -143,6 +150,8 @@ function Protected() {
               <Route path="/branches" element={g('branches', <BranchesPage />)} />
               <Route path="/settings" element={g('settings', <SettingsPage />)} />
               <Route path="/audit" element={g('audit', <AuditPage />)} />
+              <Route path="/speaking/attempt/:id" element={g('speaking', <SpeakingGrade />)} />
+              <Route path="/speaking/variant/:id" element={g('speaking', <SpeakingVariant />)} />
             </>
           )}
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -153,8 +162,22 @@ function Protected() {
   )
 }
 
+/** Imtihon oynasi: menyusiz va ilova qulfisiz (imtihon o'rtasida qulf chiqmasin) */
+function ExamRoute() {
+  const { user } = useAuth()
+  if (!user) return <LoginPage />
+  if (user.role !== 'student') return <Navigate to="/speaking" replace />
+  return (
+    <Suspense fallback={null}>
+      <ExamPage />
+    </Suspense>
+  )
+}
+
 function Root() {
-  const { ready } = useAuth()
+  const { ready, user } = useAuth()
+  // Gapirish imtihoni javoblari: internet qaytganda yoki keyingi kirishda avtomatik yuboriladi
+  useAnswerUploader(user?.id)
   useEffect(() => {
     if (ready) requestAnimationFrame(() => hideBoot())
   }, [ready])
@@ -164,6 +187,7 @@ function Root() {
       <Route path="/apply" element={<ApplyPage />} />
       <Route path="/pay/:code" element={<PayPage />} />
       <Route path="/pay/:code/:status" element={<PayPage />} />
+      <Route path="/exam/:attemptId" element={<ExamRoute />} />
       <Route path="/*" element={<Protected />} />
     </Routes>
   )

@@ -402,6 +402,61 @@ export interface Setting extends Base {
   value: unknown
 }
 
+// ─── Gapirish imtihoni (milliy CEFR, turk tili) ─────────────────────────────
+export type SpeakingPart = '1.1' | '1.2' | '2' | '3'
+export interface SpeakingVariant extends Base {
+  title: string
+  level?: string | null
+  status: 'draft' | 'published' | 'archived'
+  sort: number
+  source?: string | null
+  created_by?: ID | null
+  updated_at?: string
+}
+export interface SpeakingItem extends Base {
+  variant_id: ID
+  part: SpeakingPart
+  position: number
+  prompt?: string | null
+  bullets: string[]
+  pros: string[]
+  cons: string[]
+  images: string[]
+  media_path?: string | null
+  media_kind?: 'audio' | 'video' | null
+  prep_seconds: number
+  answer_seconds: number
+}
+export interface SpeakingProgress {
+  step?: number
+  startedAt?: number
+  /** Imtihon paytida ilovadan chiqishlar soni */
+  blurs?: number
+}
+export interface SpeakingAttempt extends Base {
+  variant_id: ID
+  student_id: ID
+  status: 'in_progress' | 'submitted' | 'graded'
+  started_at: string
+  submitted_at?: string | null
+  progress: SpeakingProgress
+  scores?: Record<string, number> | null
+  total?: number | null
+  level?: string | null
+  comment?: string | null
+  graded_by?: ID | null
+  graded_at?: string | null
+  audio_deleted_at?: string | null
+}
+export interface SpeakingAnswer extends Base {
+  attempt_id: ID
+  item_id: ID
+  audio_path?: string | null
+  mime?: string | null
+  duration_ms?: number | null
+  size_bytes?: number | null
+}
+
 export interface Tables {
   branches: Branch
   rooms: Room
@@ -435,6 +490,10 @@ export interface Tables {
   product_sales: ProductSale
   audit_log: AuditLog
   settings: Setting
+  speaking_variants: SpeakingVariant
+  speaking_items: SpeakingItem
+  speaking_attempts: SpeakingAttempt
+  speaking_answers: SpeakingAnswer
 }
 
 export type TableName = keyof Tables

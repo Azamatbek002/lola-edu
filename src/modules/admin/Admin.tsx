@@ -12,6 +12,7 @@ import { InstallApp } from '@/components/InstallApp'
 import { BackupCard } from './Backup'
 import { AppLockCard } from '@/components/AppLock'
 import { OnlinePayCard } from '../finance/OnlinePay'
+import { SpeakingSettingsCard } from '../speaking/SettingsCard'
 import { useOnlinePay } from '@/lib/onlinepay'
 import { APP_VERSION, hardRefresh } from '@/lib/pwa'
 import { ArrowsClockwise } from '@/components/icons'
@@ -144,6 +145,7 @@ export function SettingsPage() {
           <div className="card-body small muted">{t('set.integrationHint')}</div>
         </Card>
         {(me.role === 'owner' || me.role === 'admin') && <OnlinePayCard />}
+        {(me.role === 'owner' || me.role === 'admin') && <SpeakingSettingsCard />}
         {(me.role === 'owner' || me.role === 'admin') && <BackupCard />}
         {db.mode === 'demo' && (
           <Card title={t('set.data')} pad>

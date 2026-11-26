@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap, CalendarDays, CheckSquare, Star, ClipboardList, Award, Library,
   UserSquare2, Target, Megaphone, Wallet, AlertTriangle, Receipt, Banknote, BarChart3, ShoppingBag, MessageSquare,
-  MessageCircleHeart, PartyPopper, ListTodo, IdCard, Building2, Settings, History, type LucideIcon,
+  MessageCircleHeart, PartyPopper, ListTodo, IdCard, Building2, Settings, History, Microphone, type LucideIcon,
 } from '@/components/icons'
 import type { Module } from '@/lib/permissions'
 import type { Role } from '@/lib/types'
@@ -39,6 +39,7 @@ export const STAFF_NAV: NavSection[] = [
       { to: '/teachers', label: 'nav.teachers', icon: UserSquare2, module: 'teachers' },
       { to: '/certificates', label: 'nav.certificates', icon: Award, module: 'certificates' },
       { to: '/materials', label: 'nav.materials', icon: Library, module: 'materials' },
+      { to: '/speaking', label: 'nav.speaking', icon: Microphone, module: 'speaking' },
     ],
   },
   {
@@ -88,6 +89,7 @@ export const PORTAL_NAV: NavSection[] = [
       { to: '/my/grades', label: 'nav.myGrades', icon: Star },
       { to: '/my/homework', label: 'nav.myHomework', icon: ClipboardList },
       { to: '/my/payments', label: 'nav.myPayments', icon: Wallet },
+      { to: '/speaking', label: 'nav.speaking', icon: Microphone },
     ],
   },
   {
