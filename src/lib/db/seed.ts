@@ -4,6 +4,7 @@ import type { Tables, Student, Group, Enrollment, Attendance, Payment, Charge, L
 import { addDays, addMonths, monthISO, todayISO } from '../format'
 import { lessonDatesInMonth } from '../schedule'
 import { chargeForMonth, dueDateFor, paymentDayFor } from '../finance'
+import { speakingSeed } from './speakingSeed'
 
 type Seed = { [K in keyof Tables]?: Tables[K][] }
 
@@ -355,7 +356,12 @@ export function buildSeed(): Seed {
     messages: [],
     product_sales: [],
     audit_log: [],
+    speaking_variants: speakingSeed().speaking_variants,
+    speaking_items: speakingSeed().speaking_items,
+    speaking_attempts: [],
+    speaking_answers: [],
     settings: [
+      speakingSeed().setting,
       { id: 'st1', key: 'center', value: { name: 'Lola Edu Türk Dili Markazi', phone: '+998712001010', telegram: '@lolaedu', instagram: '@lola.edu', payment_due_day: 10, absence_alert: true, debt_alert: true } },
     ],
   }

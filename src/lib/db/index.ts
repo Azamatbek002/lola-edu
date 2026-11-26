@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Row, TableName } from '../types'
 import { uid } from '../format'
 import { buildSeed } from './seed'
+import { speakingSeed } from './speakingSeed'
 import { SUPABASE_KEY, SUPABASE_URL } from '../config'
 
 export interface DB {
@@ -106,10 +107,17 @@ function localDB(): DB {
     ensureSeed()
     if (mem.has(table)) return mem.get(table)!
     let rows: any[] = []
+    let raw: string | null = null
     try {
-      rows = JSON.parse(localStorage.getItem(PREFIX + table) || '[]')
+      raw = localStorage.getItem(PREFIX + table)
+      rows = JSON.parse(raw || '[]')
     } catch {
       rows = []
+    }
+    // Avvalroq ochilgan demo: keyin qo'shilgan bo'lim namunalari (gapirish imtihoni) bir marta qo'shiladi
+    if (raw === null && (table === 'speaking_variants' || table === 'speaking_items')) {
+      rows = speakingSeed()[table]
+      save(table, rows)
     }
     mem.set(table, rows)
     return rows

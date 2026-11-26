@@ -28,6 +28,7 @@ export type Module =
   | 'branches'
   | 'settings'
   | 'audit'
+  | 'speaking'
 
 const MGMT: Role[] = ['owner', 'admin', 'manager']
 const STAFF: Role[] = ['owner', 'admin', 'manager', 'reception', 'sales', 'marketer', 'accountant', 'teacher']
@@ -62,6 +63,8 @@ const VIEW: Record<Module, Role[]> = {
   branches: ['owner', 'admin'],
   settings: ['owner', 'admin'],
   audit: ['owner', 'admin'],
+  // Gapirish imtihoni: o'quvchi topshiradi, ota-ona natijani ko'radi, ustoz va rahbariyat baholaydi
+  speaking: [...MGMT, 'teacher', 'student', 'parent'],
 }
 
 /** Kim o'zgartira oladi (VIEW ichidan) */
@@ -83,6 +86,7 @@ const EDIT: Partial<Record<Module, Role[]>> = {
   store: [...MGMT, 'reception', 'accountant'],
   feedback: [...MGMT],
   events: [...MGMT, 'marketer', 'reception'],
+  speaking: [...MGMT, 'teacher'],
 }
 
 export function canView(role: Role, m: Module): boolean {

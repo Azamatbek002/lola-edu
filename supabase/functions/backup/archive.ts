@@ -10,6 +10,7 @@ export const TABLES = [
   'homework', 'homework_submissions', 'certificates', 'materials', 'charges', 'payments', 'payment_transactions',
   'expenses', 'salary_payouts', 'products', 'product_sales', 'campaigns', 'leads', 'lead_activities', 'promo_codes',
   'message_templates', 'messages', 'notifications', 'feedback', 'events', 'tasks', 'settings', 'audit_log',
+  'speaking_variants', 'speaking_items', 'speaking_attempts', 'speaking_answers',
 ]
 
 /** Excel (ru/uz sozlamalari) uchun: ";" ajratuvchi, UTF-8 BOM */
