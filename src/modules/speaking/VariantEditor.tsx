@@ -18,7 +18,6 @@ import { partTitle, Question } from './Exam'
 
 const lines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean)
 const MAX_IMAGE = 8 * 1024 * 1024
-const MAX_MEDIA = 50 * 1024 * 1024
 
 export default function VariantEditor() {
   const { id = '' } = useParams()
@@ -135,26 +134,6 @@ export default function VariantEditor() {
   const removeImage = async (it: SpeakingItem, p: string) => {
     await mi.update(it.id, { images: (it.images ?? []).filter((x) => x !== p) })
     await removeMedia([p])
-  }
-  const setMedia = async (it: SpeakingItem, f: File | undefined) => {
-    if (!f) return
-    const kind = f.type.startsWith('video/') ? 'video' : f.type.startsWith('audio/') ? 'audio' : null
-    if (!kind) return
-    if (f.size > MAX_MEDIA) {
-      toast.error(fillTemplate(t('sp.fileTooBig'), { mb: 50 }))
-      return
-    }
-    setBusy('media-' + it.id)
-    try {
-      const path = await uploadMedia(id, f)
-      const old = it.media_path
-      await mi.update(it.id, { media_path: path, media_kind: kind })
-      if (old) await removeMedia([old])
-    } catch (e) {
-      toast.error((e as Error).message || t('common.error'))
-    } finally {
-      setBusy('')
-    }
   }
   const clearMedia = async (it: SpeakingItem) => {
     const old = it.media_path
@@ -284,7 +263,7 @@ export default function VariantEditor() {
                         <input type="file" accept="image/*" multiple hidden onChange={(e) => (addImages(it, e.target.files), (e.target.value = ''))} />
                       </label>
                     )}
-                    {it.media_path ? (
+                    {it.media_path && (
                       <div className="sp-mediafile">
                         {it.media_kind === 'video' ? <FilmStrip size={17} /> : <SpeakerHigh size={17} />}
                         {urls[it.media_path] && (it.media_kind === 'video' ? <video src={urls[it.media_path]} controls preload="metadata" /> : <audio src={urls[it.media_path]} controls preload="metadata" />)}
@@ -294,14 +273,6 @@ export default function VariantEditor() {
                           </button>
                         )}
                       </div>
-                    ) : (
-                      editable && (
-                        <label className={'sp-upload' + (busy === 'media-' + it.id ? ' busy' : '')} title={t('sp.mediaHint')}>
-                          <FilmStrip size={18} />
-                          <span>{t('sp.addMedia')}</span>
-                          <input type="file" accept="audio/*,video/*" hidden onChange={(e) => (setMedia(it, e.target.files?.[0]), (e.target.value = ''))} />
-                        </label>
-                      )
                     )}
                   </div>
                 </div>

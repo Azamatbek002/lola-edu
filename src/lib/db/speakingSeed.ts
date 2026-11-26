@@ -8,6 +8,20 @@ const pic = (emoji: string, a: string, b: string) =>
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="400" height="300" fill="url(#g)"/><text x="200" y="190" font-size="130" text-anchor="middle">${emoji}</text></svg>`,
   )
 
+/** Milliy CEFR (Multilevel) gapirish mezonlari asosida: 4 mezon × 25 ball = 100 ball */
+export const SPEAKING_CRITERIA = [
+  { id: 'fluency', name: 'Ravonlik', max: 25 },
+  { id: 'coherence', name: "Izchillik va bog'lanish", max: 25 },
+  { id: 'vocabulary', name: "Lug'at boyligi", max: 25 },
+  { id: 'grammar', name: 'Grammatika (xilma-xillik va aniqlik)', max: 25 },
+]
+/** Rasmiy 0–75 shkaladagi chegaralar (B1 38, B2 51, C1 65) 100 ballga mutanosib o'tkazilgan */
+export const SPEAKING_LEVELS = [
+  { name: 'B1', min: 51 },
+  { name: 'B2', min: 68 },
+  { name: 'C1', min: 87 },
+]
+
 type Item = Omit<SpeakingItem, 'id' | 'variant_id' | 'position'>
 const q = (part: SpeakingItem['part'], prompt: string, prep: number, answer: number, extra: Partial<Item> = {}): Item => ({
   part,
@@ -60,18 +74,9 @@ export function speakingSeed(): { speaking_variants: SpeakingVariant[]; speaking
     id: 'st-speaking',
     key: 'speaking',
     value: {
-      criteria: [
-        { id: 'fluency', name: 'Ravonlik va izchillik', max: 10 },
-        { id: 'grammar', name: 'Grammatika', max: 10 },
-        { id: 'vocab', name: "Lug'at boyligi", max: 10 },
-        { id: 'pron', name: 'Talaffuz', max: 10 },
-      ],
-      levels: [
-        { name: 'B1', min: 18 },
-        { name: 'B2', min: 26 },
-        { name: 'C1', min: 34 },
-      ],
-      retention_days_after_grading: 5,
+      criteria: SPEAKING_CRITERIA,
+      levels: SPEAKING_LEVELS,
+      retention_days_after_grading: 2,
       intro_seconds: 15,
       intros: {
         '1.1': 'Birinci bölümde size kendiniz ve ilgi alanlarınız hakkında kısa sorular sorulacaktır. Zil sesini duyduktan sonra konuşmaya başlayınız.',

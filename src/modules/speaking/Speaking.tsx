@@ -1,8 +1,8 @@
 // "Gapirish imtihoni" bo'limi: o'quvchi — variantlar va natijalar; ota-ona — farzandining natijalari;
 // ustoz va rahbariyat — topshirilgan imtihonlar (baholash) va variantlar.
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { CloudArrowUp, Copy, Microphone, Pencil, Play, Plus, Trash2, WifiSlash } from '@/components/icons'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, CloudArrowUp, Copy, Eye, Microphone, Pencil, Play, Plus, Trash2, WifiSlash } from '@/components/icons'
 import { Badge, Button, Card, Empty, Field, Modal, PageHead, SearchInput, Select, Tabs, useConfirm, type Tone } from '@/components/ui'
 import { DataTable } from '@/components/DataTable'
 import { useMe } from '@/lib/auth'
@@ -15,6 +15,9 @@ import type { SpeakingAttempt, SpeakingVariant } from '@/lib/types'
 import { useSpeakingSettings } from '@/lib/speaking/api'
 import { maxTotal } from '@/lib/speaking/grading'
 import { useUploadStatus } from '@/lib/speaking/uploader'
+import { signedMediaUrls } from '@/lib/speaking/files'
+import { sortItems } from '@/lib/speaking/timeline'
+import { partTitle, Question } from './Exam'
 import { copyVariant, createVariantFromTemplate } from './variantOps'
 
 export const ATTEMPT_TONE: Record<SpeakingAttempt['status'], Tone> = { in_progress: 'yellow', submitted: 'blue', graded: 'green' }
@@ -49,60 +52,135 @@ function StudentHome() {
   const [tab, setTab] = useState<'variants' | 'results'>('variants')
   const variants = useRows('speaking_variants').filter((v) => v.status === 'published').sort(byTitle)
   const attempts = useRows('speaking_attempts').filter((a) => a.student_id === me.student_id)
-  const byVariant = new Map(attempts.map((a) => [a.variant_id, a]))
-  const graded = attempts.filter((a) => a.status !== 'in_progress').length
+  const open = attempts.find((a) => a.status === 'in_progress')
+  const done = attempts.filter((a) => a.status !== 'in_progress')
+  const last = [...done].filter((a) => a.status === 'graded').sort((a, b) => (b.graded_at ?? '').localeCompare(a.graded_at ?? ''))[0]
   return (
     <>
       <PageHead title={t('nav.speaking')} subtitle={t('sp.subtitle')} />
       <UploadBanner />
+      <div className="card sp-hero mb">
+        <div className="sp-hero-icon">
+          <Microphone size={26} />
+        </div>
+        <div className="grow">
+          <h3>{t('sp.takeExam')}</h3>
+          <p className="small muted">{t('sp.takeExamHint')}</p>
+          {last && (
+            <p className="small mt-xs">
+              {t('sp.lastResult')}: <b>{last.total ?? '—'}</b>
+              {last.level ? ` · ${last.level}` : ''}
+            </p>
+          )}
+        </div>
+        {open ? (
+          <Button variant="primary" icon={<Play size={15} />} onClick={() => nav(`/exam/${open.id}`)}>
+            {t('sp.resume')}
+          </Button>
+        ) : (
+          <Button variant="primary" disabled={!variants.length} onClick={() => nav('/speaking/start')}>
+            {t('sp.start')}
+          </Button>
+        )}
+      </div>
       <Tabs
         tabs={[
-          { key: 'variants', label: `${t('sp.variants')} (${variants.length})` },
-          { key: 'results', label: `${t('sp.myResults')}${graded ? ` (${graded})` : ''}` },
+          { key: 'variants', label: `${t('sp.prepVariants')} (${variants.length})` },
+          { key: 'results', label: `${t('sp.myResults')}${done.length ? ` (${done.length})` : ''}` },
         ]}
         value={tab}
         onChange={setTab}
       />
-      {tab === 'variants' ? (
-        variants.length ? (
-          <div className="sp-grid">
-            {variants.map((v) => {
-              const a = byVariant.get(v.id)
-              return (
-                <div key={v.id} className={'card sp-vcard' + (a ? ' taken' : '')}>
-                  <div className="sp-vicon">
-                    <Microphone size={22} />
-                  </div>
-                  <div className="grow">
-                    <b>{v.title}</b>
-                    <div className="small muted">{v.level ? `${v.level} · ` : ''}{t('sp.parts3')}</div>
-                  </div>
-                  {!a ? (
-                    <Button size="sm" variant="primary" onClick={() => nav(`/speaking/start/${v.id}`)}>
-                      {t('sp.start')}
-                    </Button>
-                  ) : a.status === 'in_progress' ? (
-                    <Button size="sm" variant="primary" icon={<Play size={14} />} onClick={() => nav(`/exam/${a.id}`)}>
-                      {t('sp.resume')}
-                    </Button>
-                  ) : a.status === 'graded' ? (
-                    <button className="sp-score" onClick={() => setTab('results')}>
-                      {a.total ?? '—'}
-                    </button>
-                  ) : (
-                    <Badge tone="blue">{t('sp.st.submitted')}</Badge>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <Card>
-            <Empty text={t('sp.noVariants')} />
-          </Card>
-        )
+      {tab === 'variants' ? <VariantGrid variants={variants} /> : <ResultsList attempts={attempts} />}
+    </>
+  )
+}
+
+/** Tayyorlanish uchun: e'lon qilingan barcha variantlar (savollarini ochib ko'rish mumkin) */
+function VariantGrid({ variants }: { variants: SpeakingVariant[] }) {
+  const t = useT()
+  const nav = useNavigate()
+  if (!variants.length)
+    return (
+      <Card>
+        <Empty text={t('sp.noVariants')} />
+      </Card>
+    )
+  return (
+    <>
+      <p className="small muted mb">{t('sp.prepHint')}</p>
+      <div className="sp-grid">
+        {variants.map((v) => (
+          <button key={v.id} className="card sp-vcard" onClick={() => nav(`/speaking/view/${v.id}`)}>
+            <div className="sp-vicon">
+              <Eye size={20} />
+            </div>
+            <div className="grow">
+              <b>{v.title}</b>
+              <div className="small muted">
+                {v.level ? `${v.level} · ` : ''}
+                {t('sp.parts3')}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** O'quvchi va ota-ona: variant savollarini ko'rish (tayyorlanish uchun) */
+export function VariantView() {
+  const { id = '' } = useParams()
+  const t = useT()
+  const nav = useNavigate()
+  const variant = useRows('speaking_variants').find((v) => v.id === id)
+  const allItems = useRows('speaking_items')
+  const items = useMemo(() => sortItems(allItems.filter((i) => i.variant_id === id)), [allItems, id])
+  const [urls, setUrls] = useState<Record<string, string>>({})
+  const key = items.map((i) => i.images.join(',')).join('|')
+  useEffect(() => {
+    let off = false
+    signedMediaUrls(items.flatMap((i) => i.images ?? []))
+      .then((u) => !off && setUrls(u))
+      .catch(() => undefined)
+    return () => {
+      off = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  return (
+    <>
+      <PageHead
+        title={variant?.title ?? t('nav.speaking')}
+        subtitle={t('sp.viewHint')}
+        actions={
+          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => nav('/speaking')}>
+            {t('common.back')}
+          </Button>
+        }
+      />
+      {!items.length ? (
+        <Card>
+          <Empty text={t('sp.noQuestions')} />
+        </Card>
       ) : (
-        <ResultsList attempts={attempts} />
+        <div className="sp-preview">
+          {items.map((it, i) => (
+            <div key={it.id} className="ex-card">
+              <div className="ex-card-head">
+                <b>
+                  {partTitle(it.part)}
+                  {it.part === '1.1' || it.part === '1.2' ? ` · ${i + 1}. soru` : ''}
+                </b>
+                <span className="small muted">
+                  {fillTemplate(t('sp.timeShort'), { p: it.prep_seconds, a: it.answer_seconds })}
+                </span>
+              </div>
+              <Question item={it} urls={urls} />
+            </div>
+          ))}
+        </div>
       )}
     </>
   )

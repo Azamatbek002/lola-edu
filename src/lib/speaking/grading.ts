@@ -20,7 +20,7 @@ export interface SpeakingSettings {
   intro_seconds: number
 }
 
-export const DEFAULT_SPEAKING: SpeakingSettings = { criteria: [], levels: [], retention_days_after_grading: 5, intros: {}, intro_seconds: 15 }
+export const DEFAULT_SPEAKING: SpeakingSettings = { criteria: [], levels: [], retention_days_after_grading: 2, intros: {}, intro_seconds: 15 }
 
 const num = (v: unknown, d: number, lo: number, hi: number) => {
   const n = Number(v)
@@ -43,7 +43,7 @@ export function parseSpeakingSettings(value: unknown): SpeakingSettings {
   return {
     criteria,
     levels,
-    retention_days_after_grading: num(v.retention_days_after_grading, 5, 1, 60),
+    retention_days_after_grading: num(v.retention_days_after_grading, 2, 1, 60),
     intros: (v.intros && typeof v.intros === 'object' ? v.intros : {}) as SpeakingSettings['intros'],
     intro_seconds: num(v.intro_seconds, 15, 0, 120),
   }

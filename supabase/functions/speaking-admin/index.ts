@@ -1,5 +1,5 @@
 // Gapirish imtihoni — xizmat funksiyasi:
-//  • cleanup: baholangandan N kun (sozlama, standart 5) o'tgan o'quvchi ovozlarini yopiq ombordan o'chiradi (pg_cron, har kuni)
+//  • cleanup: baholangandan N kun (sozlama, standart 2) o'tgan o'quvchi ovozlarini yopiq ombordan o'chiradi (pg_cron, har kuni)
 //  • import:  tayyor variantni (matn + rasmlar) yuklaydi — rahbar/administrator yoki bir martalik import kaliti bilan
 // Ruxsat: cron kaliti, rahbar/administrator JWT yoki private.app_secrets['speaking_import'].
 import { adminClient, corsHeaders, cronAuthorized, json } from '../_shared/util.ts'
@@ -92,7 +92,7 @@ async function doImport(db: Db, body: ImportBody) {
 
 async function doCleanup(db: Db) {
   const { data: cfg } = await db.from('settings').select('value').eq('key', 'speaking').maybeSingle()
-  const days = Number((cfg?.value as Record<string, unknown> | null)?.retention_days_after_grading ?? 5) || 5
+  const days = Number((cfg?.value as Record<string, unknown> | null)?.retention_days_after_grading ?? 2) || 2
   const before = new Date(Date.now() - days * 86_400_000).toISOString()
   const { data: due } = await db
     .from('speaking_attempts')

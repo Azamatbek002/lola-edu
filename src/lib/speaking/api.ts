@@ -8,14 +8,13 @@ import { idb } from './idb'
 import { removeAnswers } from './files'
 
 export class SpeakingError extends Error {
-  constructor(readonly code: 'already_taken' | 'variant_not_available' | 'forbidden' | 'network' | 'other', msg?: string) {
+  constructor(readonly code: 'variant_not_available' | 'forbidden' | 'network' | 'other', msg?: string) {
     super(msg || code)
   }
 }
 
 function asSpeakingError(e: unknown): SpeakingError {
   const msg = (e as { message?: string })?.message ?? String(e)
-  if (/already_taken/.test(msg)) return new SpeakingError('already_taken', msg)
   if (/variant_not_available/.test(msg)) return new SpeakingError('variant_not_available', msg)
   if (/forbidden|permission|42501/.test(msg)) return new SpeakingError('forbidden', msg)
   if (/failed to fetch|network|load failed/i.test(msg)) return new SpeakingError('network', msg)
@@ -23,21 +22,27 @@ function asSpeakingError(e: unknown): SpeakingError {
 }
 
 export const speakingApi = {
-  /** Imtihonni boshlash (har variant — 1 marta). Tugallanmagan urinish bo'lsa, o'shani qaytaradi. */
-  async start(variantId: string, studentId: string): Promise<string> {
+  /**
+   * Imtihonni boshlash: variant tasodifiy tanlanadi, topshirishlar soni cheklanmaydi.
+   * Tugallanmagan imtihon bo'lsa — o'sha davom etadi (1 soatdan eskisi yakunlangan deb hisoblanadi).
+   */
+  async startRandom(studentId: string): Promise<string> {
     if (supabase) {
-      const { data, error } = await supabase.rpc('speaking_start', { p_variant: variantId })
+      const { data, error } = await supabase.rpc('speaking_start_random')
       if (error) throw asSpeakingError(error)
       return data as string
     }
-    const v = (await db.list('speaking_variants')).find((x) => x.id === variantId)
-    if (!v || v.status !== 'published') throw new SpeakingError('variant_not_available')
-    const a = (await db.list('speaking_attempts')).find((x) => x.variant_id === variantId && x.student_id === studentId)
-    if (a) {
-      if (a.status === 'in_progress') return a.id
-      throw new SpeakingError('already_taken')
+    const attempts = await db.list('speaking_attempts')
+    const open = attempts.filter((x) => x.student_id === studentId && x.status === 'in_progress').sort((a, b) => b.started_at.localeCompare(a.started_at))[0]
+    if (open) {
+      if (Date.now() - new Date(open.started_at).getTime() < 3_600_000) return open.id
+      await db.update('speaking_attempts', open.id, { status: 'submitted', submitted_at: new Date().toISOString() })
     }
-    const row = await db.insert('speaking_attempts', { variant_id: variantId, student_id: studentId, status: 'in_progress', started_at: new Date().toISOString(), progress: {} })
+    const items = await db.list('speaking_items')
+    const pool = (await db.list('speaking_variants')).filter((v) => v.status === 'published' && items.some((i) => i.variant_id === v.id))
+    if (!pool.length) throw new SpeakingError('variant_not_available')
+    const v = pool[Math.floor(Math.random() * pool.length)]
+    const row = await db.insert('speaking_attempts', { variant_id: v.id, student_id: studentId, status: 'in_progress', started_at: new Date().toISOString(), progress: {} })
     return row.id
   },
 
@@ -76,7 +81,7 @@ export const speakingApi = {
     else await db.insert('speaking_answers', row)
   },
 
-  /** Qayta topshirishga ruxsat: urinish va uning ovozlarini o'chirish (rahbar/administrator) */
+  /** Urinishni butunlay o'chirish: ovozlari bilan (rahbar/administrator, masalan sinov urinishlari) */
   async resetAttempt(attemptId: string): Promise<void> {
     const answers = (await db.list('speaking_answers')).filter((a) => a.attempt_id === attemptId)
     await removeAnswers(answers.map((a) => a.audio_path).filter((p): p is string => !!p))

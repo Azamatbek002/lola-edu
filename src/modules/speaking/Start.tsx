@@ -1,6 +1,6 @@
 // Imtihon oldidan: qoidalar va mikrofonni tekshirish. Tekshiruv o'tmaguncha imtihon boshlanmaydi.
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CheckCircle2, Microphone, Play } from '@/components/icons'
 import { Button, Card, Modal, PageHead, useConfirm } from '@/components/ui'
@@ -13,20 +13,18 @@ import { audioContext, meter, openMic, pickMime, recordingSupported } from '@/li
 import { requestFull } from './Exam'
 
 const RULES = ['sp.rule1', 'sp.rule2', 'sp.rule3', 'sp.rule4', 'sp.rule5']
-const INFO = ['sp.info1', 'sp.info2', 'sp.info3', 'sp.info4', 'sp.info5']
+const INFO = ['sp.info0', 'sp.info1', 'sp.info2', 'sp.info3', 'sp.info4', 'sp.info5']
 /** Mikrofon tekshiruvida o'qiladigan matn (turkcha) */
 const CHECK_TEXT = 'Merhaba! Ben Türkçe öğreniyorum. Bugün konuşma sınavına katılıyorum ve sorulara açık, anlaşılır bir şekilde cevap vereceğim.'
 
 export default function SpeakingStart() {
-  const { variantId = '' } = useParams()
   const t = useT()
   const me = useMe()
   const nav = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
   const confirm = useConfirm()
-  const variant = useRows('speaking_variants').find((v) => v.id === variantId)
-  const attempt = useRows('speaking_attempts').find((a) => a.variant_id === variantId && a.student_id === me.student_id)
+  const open = useRows('speaking_attempts').find((a) => a.student_id === me.student_id && a.status === 'in_progress')
   const [check, setCheck] = useState(false)
   const [micOk, setMicOk] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -38,24 +36,23 @@ export default function SpeakingStart() {
     requestFull()
     setBusy(true)
     try {
-      const id = await speakingApi.start(variantId, me.student_id ?? '')
+      const id = await speakingApi.startRandom(me.student_id ?? '')
       await qc.invalidateQueries({ queryKey: ['speaking_attempts'] })
       await qc.invalidateQueries({ queryKey: ['speaking_items'] })
       nav(`/exam/${id}`, { replace: true, state: { fresh: true } })
     } catch (e) {
       const code = e instanceof SpeakingError ? e.code : 'other'
-      toast.error(code === 'already_taken' ? t('sp.alreadyTaken') : code === 'variant_not_available' ? t('sp.notAvailable') : code === 'network' ? t('sp.noInternet') : t('common.error'))
+      toast.error(code === 'variant_not_available' ? t('sp.notAvailable') : code === 'network' ? t('sp.noInternet') : t('common.error'))
       if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined)
     } finally {
       setBusy(false)
     }
   }
 
-  const done = attempt && attempt.status !== 'in_progress'
   return (
     <>
       <PageHead
-        title={`${t('nav.speaking')} — ${variant?.title ?? ''}`}
+        title={t('sp.takeExam')}
         subtitle={t('sp.subtitle')}
         actions={
           <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => nav('/speaking')}>
@@ -64,43 +61,37 @@ export default function SpeakingStart() {
         }
       />
       {!recordingSupported() && <div className="sp-alert warn mb">{t('sp.notSupported')}</div>}
-      {done ? (
-        <Card pad>
-          <p>{t('sp.alreadyTaken')}</p>
-        </Card>
-      ) : (
-        <Card pad className="sp-rules">
-          <h3>{t('sp.rulesTitle')}</h3>
-          <ul className="sp-forbid">
-            {RULES.map((k) => (
-              <li key={k}>{t(k)}</li>
-            ))}
-          </ul>
-          <p className="sp-strong">{t('sp.rulesWarn')}</p>
-          <ul className="sp-info">
-            {INFO.map((k) => (
-              <li key={k}>{t(k)}</li>
-            ))}
-          </ul>
-          <div className="sp-actions">
-            {attempt?.status === 'in_progress' ? (
-              <Button variant="primary" block icon={<Play size={16} />} onClick={() => nav(`/exam/${attempt.id}`)}>
-                {t('sp.resume')}
+      <Card pad className="sp-rules">
+        <h3>{t('sp.rulesTitle')}</h3>
+        <ul className="sp-forbid">
+          {RULES.map((k) => (
+            <li key={k}>{t(k)}</li>
+          ))}
+        </ul>
+        <p className="sp-strong">{t('sp.rulesWarn')}</p>
+        <ul className="sp-info">
+          {INFO.map((k) => (
+            <li key={k}>{t(k)}</li>
+          ))}
+        </ul>
+        <div className="sp-actions">
+          {open ? (
+            <Button variant="primary" block icon={<Play size={16} />} onClick={() => nav(`/exam/${open.id}`)}>
+              {t('sp.resume')}
+            </Button>
+          ) : (
+            <>
+              <Button variant={micOk ? 'success' : 'secondary'} block icon={micOk ? <CheckCircle2 size={17} /> : <Microphone size={17} />} onClick={() => setCheck(true)} disabled={!recordingSupported()}>
+                {micOk ? t('sp.micOk') : t('sp.checkMic')}
               </Button>
-            ) : (
-              <>
-                <Button variant={micOk ? 'success' : 'secondary'} block icon={micOk ? <CheckCircle2 size={17} /> : <Microphone size={17} />} onClick={() => setCheck(true)} disabled={!recordingSupported()}>
-                  {micOk ? t('sp.micOk') : t('sp.checkMic')}
-                </Button>
-                <Button variant="primary" block icon={<Play size={16} />} disabled={!micOk || busy || !variant} onClick={start}>
-                  {t('sp.startExam')}
-                </Button>
-                {!micOk && <p className="small muted center">{t('sp.checkFirst')}</p>}
-              </>
-            )}
-          </div>
-        </Card>
-      )}
+              <Button variant="primary" block icon={<Play size={16} />} disabled={!micOk || busy} onClick={start}>
+                {t('sp.startExam')}
+              </Button>
+              {!micOk && <p className="small muted center">{t('sp.checkFirst')}</p>}
+            </>
+          )}
+        </div>
+      </Card>
       {check && (
         <MicCheck
           onClose={() => setCheck(false)}

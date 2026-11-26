@@ -1,7 +1,7 @@
 // Ustoz/rahbariyat: o'quvchi javoblarini eshitish, mezonlar bo'yicha ball, daraja va izoh qo'yish.
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowsClockwise, AlertTriangle as Warning } from '@/components/icons'
+import { ArrowLeft, Trash2, AlertTriangle as Warning } from '@/components/icons'
 import { Badge, Button, Card, Empty, Field, Input, PageHead, Select, Textarea, useConfirm } from '@/components/ui'
 import { useMe } from '@/lib/auth'
 import { useMutate, useRows } from '@/lib/data'
@@ -197,8 +197,8 @@ export default function GradePage() {
             )}
             {attempt.graded_at && <p className="small muted">{fillTemplate(t('sp.gradedAt'), { d: dateTime(attempt.graded_at) })}</p>}
             {(me.role === 'owner' || me.role === 'admin') && (
-              <Button variant="ghost" size="sm" icon={<ArrowsClockwise size={15} />} onClick={reset}>
-                {t('sp.allowRetake')}
+              <Button variant="ghost" size="sm" icon={<Trash2 size={15} />} onClick={reset}>
+                {t('sp.deleteAttempt')}
               </Button>
             )}
           </div>

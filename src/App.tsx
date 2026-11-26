@@ -53,6 +53,7 @@ const MyHomework = lazy(() => import('@/modules/portal/Portal').then((m) => ({ d
 const MyPayments = lazy(() => import('@/modules/portal/Portal').then((m) => ({ default: m.MyPayments })))
 const SpeakingPage = lazy(() => import('@/modules/speaking/Speaking'))
 const SpeakingStart = lazy(() => import('@/modules/speaking/Start'))
+const SpeakingView = lazy(() => import('@/modules/speaking/Speaking').then((m) => ({ default: m.VariantView })))
 const SpeakingGrade = lazy(() => import('@/modules/speaking/Grade'))
 const SpeakingVariant = lazy(() => import('@/modules/speaking/VariantEditor'))
 const ExamPage = lazy(() => import('@/modules/speaking/Exam'))
@@ -121,7 +122,8 @@ function Protected() {
               <Route path="/my/grades" element={<MyGrades />} />
               <Route path="/my/homework" element={<MyHomework />} />
               <Route path="/my/payments" element={<MyPayments />} />
-              {user.role === 'student' && <Route path="/speaking/start/:variantId" element={<SpeakingStart />} />}
+              {user.role === 'student' && <Route path="/speaking/start" element={<SpeakingStart />} />}
+              <Route path="/speaking/view/:id" element={<SpeakingView />} />
             </>
           ) : (
             <>

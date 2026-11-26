@@ -31,7 +31,7 @@ describe('sozlamalar', () => {
   it("bo'sh yoki buzilgan qiymat — xavfsiz standartlar", () => {
     const s = parseSpeakingSettings(null)
     expect(s.criteria).toEqual([])
-    expect(s.retention_days_after_grading).toBe(5)
+    expect(s.retention_days_after_grading).toBe(2)
     expect(s.intro_seconds).toBe(15)
   })
   it("mezonlar tozalanadi, darajalar tartiblanadi", () => {

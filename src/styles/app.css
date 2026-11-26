@@ -838,7 +838,14 @@ html.exam-mode, html.exam-mode body { overscroll-behavior: none; }
 .sp-alert { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-radius: var(--r-md); background: var(--blue-bg); color: var(--blue); font-size: var(--fs-md); }
 .sp-alert.warn { background: var(--yellow-bg); color: var(--yellow); }
 .sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--sp-3); }
-.sp-vcard { display: flex; align-items: center; gap: var(--sp-3); padding: 14px 16px; transition: box-shadow var(--t-2) var(--ease-out), transform var(--t-2) var(--ease-out); }
+.sp-vcard { display: flex; align-items: center; gap: var(--sp-3); padding: 14px 16px; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; transition: box-shadow var(--t-2) var(--ease-out), transform var(--t-2) var(--ease-out), border-color var(--t-2); }
+.sp-vcard:hover { border-color: var(--border-2); }
+.sp-vcard:active { transform: scale(0.99); }
+.sp-hero { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-5); flex-wrap: wrap; background: linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, var(--brand-50) 70%, var(--card)) 100%); }
+.sp-hero h3 { font-family: var(--serif); font-size: 1.15rem; margin-bottom: 2px; }
+.sp-hero .grow { min-width: 200px; }
+.sp-hero-icon { width: 54px; height: 54px; border-radius: 16px; flex-shrink: 0; display: grid; place-items: center; background: var(--brand); color: #fff; box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--brand) 70%, transparent); }
+.mt-xs { margin-top: 6px; }
 .sp-vcard:hover { box-shadow: var(--shadow-md); }
 .sp-vcard.taken { background: var(--card-2); }
 .sp-vicon { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; background: var(--brand-50); color: var(--brand); }
