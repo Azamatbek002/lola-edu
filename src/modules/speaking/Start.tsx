@@ -8,7 +8,7 @@ import { useMe } from '@/lib/auth'
 import { useRows } from '@/lib/data'
 import { useT } from '@/lib/i18n'
 import { useToast } from '@/components/Toast'
-import { speakingApi, SpeakingError } from '@/lib/speaking/api'
+import { speakingApi, SpeakingError, takenToday } from '@/lib/speaking/api'
 import { audioContext, meter, openMic, pickMime, recordingSupported } from '@/lib/speaking/recorder'
 import { requestFull } from './Exam'
 
@@ -24,7 +24,9 @@ export default function SpeakingStart() {
   const qc = useQueryClient()
   const toast = useToast()
   const confirm = useConfirm()
-  const open = useRows('speaking_attempts').find((a) => a.student_id === me.student_id && a.status === 'in_progress')
+  const mine = useRows('speaking_attempts').filter((a) => a.student_id === me.student_id)
+  const open = mine.find((a) => a.status === 'in_progress')
+  const today = takenToday(mine)
   const [check, setCheck] = useState(false)
   const [micOk, setMicOk] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -42,7 +44,7 @@ export default function SpeakingStart() {
       nav(`/exam/${id}`, { replace: true, state: { fresh: true } })
     } catch (e) {
       const code = e instanceof SpeakingError ? e.code : 'other'
-      toast.error(code === 'variant_not_available' ? t('sp.notAvailable') : code === 'network' ? t('sp.noInternet') : t('common.error'))
+      toast.error(code === 'daily_limit' ? t('sp.dailyDone') : code === 'variant_not_available' ? t('sp.notAvailable') : code === 'network' ? t('sp.noInternet') : t('common.error'))
       if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined)
     } finally {
       setBusy(false)
@@ -79,6 +81,8 @@ export default function SpeakingStart() {
             <Button variant="primary" block icon={<Play size={16} />} onClick={() => nav(`/exam/${open.id}`)}>
               {t('sp.resume')}
             </Button>
+          ) : today ? (
+            <div className="sp-alert">{t('sp.dailyDone')}</div>
           ) : (
             <>
               <Button variant={micOk ? 'success' : 'secondary'} block icon={micOk ? <CheckCircle2 size={17} /> : <Microphone size={17} />} onClick={() => setCheck(true)} disabled={!recordingSupported()}>

@@ -2,7 +2,8 @@
 // ustoz va rahbariyat — topshirilgan imtihonlar (baholash) va variantlar.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CloudArrowUp, Copy, Eye, Microphone, Pencil, Play, Plus, Trash2, WifiSlash } from '@/components/icons'
+import { ArrowLeft, CheckCircle2, CloudArrowUp, Copy, Eye, Microphone, Pencil, Play, Plus, TelegramLogo, Trash2, WifiSlash } from '@/components/icons'
+import { TELEGRAM_BOT_USERNAME } from '@/lib/config'
 import { Badge, Button, Card, Empty, Field, Modal, PageHead, SearchInput, Select, Tabs, useConfirm, type Tone } from '@/components/ui'
 import { DataTable } from '@/components/DataTable'
 import { useMe } from '@/lib/auth'
@@ -12,7 +13,7 @@ import { dateTime, fillTemplate } from '@/lib/format'
 import { canEdit, canView } from '@/lib/permissions'
 import { useToast } from '@/components/Toast'
 import type { SpeakingAttempt, SpeakingVariant } from '@/lib/types'
-import { useSpeakingSettings } from '@/lib/speaking/api'
+import { takenToday, useSpeakingSettings } from '@/lib/speaking/api'
 import { maxTotal } from '@/lib/speaking/grading'
 import { useUploadStatus } from '@/lib/speaking/uploader'
 import { signedMediaUrls } from '@/lib/speaking/files'
@@ -54,6 +55,8 @@ function StudentHome() {
   const attempts = useRows('speaking_attempts').filter((a) => a.student_id === me.student_id)
   const open = attempts.find((a) => a.status === 'in_progress')
   const done = attempts.filter((a) => a.status !== 'in_progress')
+  const today = takenToday(attempts)
+  const myStudent = useRows('students').find((x) => x.id === me.student_id)
   const last = [...done].filter((a) => a.status === 'graded').sort((a, b) => (b.graded_at ?? '').localeCompare(a.graded_at ?? ''))[0]
   return (
     <>
@@ -66,6 +69,11 @@ function StudentHome() {
         <div className="grow">
           <h3>{t('sp.takeExam')}</h3>
           <p className="small muted">{t('sp.takeExamHint')}</p>
+          {!me.telegram_chat_id && !myStudent?.telegram_chat_id && (
+            <a className="sp-tg" href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=${me.id}`} target="_blank" rel="noreferrer">
+              <TelegramLogo size={15} /> {t('sp.tgConnect')}
+            </a>
+          )}
           {last && (
             <p className="small mt-xs">
               {t('sp.lastResult')}: <b>{last.total ?? '—'}</b>
@@ -77,6 +85,10 @@ function StudentHome() {
           <Button variant="primary" icon={<Play size={15} />} onClick={() => nav(`/exam/${open.id}`)}>
             {t('sp.resume')}
           </Button>
+        ) : today ? (
+          <div className="sp-today">
+            <CheckCircle2 size={18} /> {t('sp.dailyDone')}
+          </div>
         ) : (
           <Button variant="primary" disabled={!variants.length} onClick={() => nav('/speaking/start')}>
             {t('sp.start')}

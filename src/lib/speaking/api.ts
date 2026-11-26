@@ -7,14 +7,27 @@ import { parseSpeakingSettings, type SpeakingSettings } from './grading'
 import { idb } from './idb'
 import { removeAnswers } from './files'
 
+/** Toshkent vaqti bo'yicha sana (YYYY-MM-DD): imtihon kuniga 1 marta */
+export function tashkentDay(iso?: string | null): string {
+  const d = iso ? new Date(iso) : new Date()
+  return new Date(d.getTime() + 5 * 3600_000).toISOString().slice(0, 10)
+}
+
+/** Bugun (Toshkent) imtihon topshirilganmi */
+export function takenToday(attempts: { status: string; started_at: string }[]): boolean {
+  const today = tashkentDay()
+  return attempts.some((a) => a.status !== 'in_progress' && tashkentDay(a.started_at) === today)
+}
+
 export class SpeakingError extends Error {
-  constructor(readonly code: 'variant_not_available' | 'forbidden' | 'network' | 'other', msg?: string) {
+  constructor(readonly code: 'daily_limit' | 'variant_not_available' | 'forbidden' | 'network' | 'other', msg?: string) {
     super(msg || code)
   }
 }
 
 function asSpeakingError(e: unknown): SpeakingError {
   const msg = (e as { message?: string })?.message ?? String(e)
+  if (/daily_limit/.test(msg)) return new SpeakingError('daily_limit', msg)
   if (/variant_not_available/.test(msg)) return new SpeakingError('variant_not_available', msg)
   if (/forbidden|permission|42501/.test(msg)) return new SpeakingError('forbidden', msg)
   if (/failed to fetch|network|load failed/i.test(msg)) return new SpeakingError('network', msg)
@@ -38,6 +51,8 @@ export const speakingApi = {
       if (Date.now() - new Date(open.started_at).getTime() < 3_600_000) return open.id
       await db.update('speaking_attempts', open.id, { status: 'submitted', submitted_at: new Date().toISOString() })
     }
+    if (attempts.some((x) => x.student_id === studentId && x.status !== 'in_progress' && x.id !== open?.id && tashkentDay(x.started_at) === tashkentDay()))
+      throw new SpeakingError('daily_limit')
     const items = await db.list('speaking_items')
     const pool = (await db.list('speaking_variants')).filter((v) => v.status === 'published' && items.some((i) => i.variant_id === v.id))
     if (!pool.length) throw new SpeakingError('variant_not_available')

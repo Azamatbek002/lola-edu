@@ -674,7 +674,9 @@ export const dict = {
   'audit.entity': ["Bo'lim", 'Раздел', 'Bölüm'],
   // Gapirish imtihoni
   'sp.takeExam': ['Imtihon topshirish', 'Сдать экзамен', 'Sınava gir'],
-  'sp.takeExamHint': ["Variantlardan biri tasodifiy tushadi. Istalgancha topshirishingiz mumkin — har safar ustoz baholaydi.", 'Случайно выпадает один из вариантов. Сдавать можно сколько угодно раз — каждый раз оценивает преподаватель.', 'Varyantlardan biri rastgele gelir. İstediğiniz kadar girebilirsiniz — her seferinde öğretmen değerlendirir.'],
+  'sp.tgConnect': ["Natijani Telegram'da olish uchun botga ulaning", 'Подключите бота, чтобы получать результат в Telegram', 'Sonucu Telegram’dan almak için bota bağlanın'],
+  'sp.dailyDone': ["Bugungi imtihonni topshirdingiz. Keyingisini ertaga topshirasiz.", 'Сегодняшний экзамен сдан. Следующий — завтра.', 'Bugünkü sınavı tamamladınız. Sonraki sınav yarın.'],
+  'sp.takeExamHint': ["Kuniga 1 marta topshiriladi: variantlardan biri tasodifiy tushadi, ustoz baholaydi, natija shu yerda va Telegram'da chiqadi.", 'Сдаётся 1 раз в день: вариант выпадает случайно, оценивает преподаватель, результат — здесь и в Telegram.', 'Günde 1 kez: varyant rastgele gelir, öğretmen değerlendirir, sonuç burada ve Telegram’da görünür.'],
   'sp.lastResult': ['Oxirgi natija', 'Последний результат', 'Son sonuç'],
   'sp.prepVariants': ['Tayyorlanish', 'Подготовка', 'Hazırlık'],
   'sp.prepHint': ["Barcha variantlarning savollarini ko'rib, tayyorlanib boring. Imtihonda ulardan biri tasodifiy tushadi.", 'Просматривайте вопросы всех вариантов и готовьтесь. На экзамене один из них выпадет случайно.', 'Tüm varyantların sorularına bakarak hazırlanın. Sınavda biri rastgele gelecek.'],
