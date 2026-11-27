@@ -779,6 +779,13 @@ html.exam-mode, html.exam-mode body { overscroll-behavior: none; }
 .ex-status { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; gap: 6px; }
 .ex-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: 600; background: var(--card); border: 1px solid var(--border); color: var(--text-2); }
 .ex-chip.warn { background: var(--yellow-bg); color: var(--yellow); border-color: transparent; }
+.ex-chip.practice { background: var(--purple-bg); color: var(--purple); border-color: transparent; }
+.ex-practice { display: inline-block; padding: 4px 12px; border-radius: var(--r-pill); background: var(--purple-bg); color: var(--purple); font-size: var(--fs-sm); font-weight: 650; }
+.ex-review { justify-content: flex-start; }
+.ex-playback { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: var(--sp-2); text-align: left; }
+.ex-pb { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+.ex-pb-q { font-size: var(--fs-md); color: var(--text-2); line-height: 1.45; }
+.ex-pb audio { width: 100%; height: 36px; }
 .ex-chip.btnlike { cursor: pointer; font: inherit; font-size: var(--fs-xs); font-weight: 600; }
 .ex-note { width: 100%; max-width: 1120px; margin: 0 auto var(--sp-3); padding: 8px 12px; border-radius: var(--r-md); background: var(--blue-bg); color: var(--blue); font-size: var(--fs-sm); animation: fade-in var(--t-3) both; }
 .ex-note.warn { background: var(--red-bg); color: var(--red); font-weight: 600; }
