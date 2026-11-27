@@ -7,7 +7,7 @@ import { I18nProvider, useT } from '@/lib/i18n'
 import { ToastProvider } from '@/components/Toast'
 import { ConfirmProvider, Skeleton } from '@/components/ui'
 import { hideBoot } from '@/lib/boot'
-import { canView, type Module } from '@/lib/permissions'
+import { canEdit, canView, type Module } from '@/lib/permissions'
 import { AppShell } from '@/layout/AppShell'
 import { AppLockProvider } from '@/components/AppLock'
 import { STAFF_NAV, PORTAL_NAV } from '@/layout/nav'
@@ -115,6 +115,7 @@ function Protected() {
           <Route path="/events" element={g('events', <EventsPage />)} />
           <Route path="/feedback" element={g('feedback', <FeedbackPage />)} />
           <Route path="/speaking" element={g('speaking', <SpeakingPage />)} />
+          <Route path="/speaking/view/:id" element={g('speaking', <SpeakingView />)} />
           {portal ? (
             <>
               <Route path="/my/schedule" element={<MySchedule />} />
@@ -123,7 +124,6 @@ function Protected() {
               <Route path="/my/homework" element={<MyHomework />} />
               <Route path="/my/payments" element={<MyPayments />} />
               {user.role === 'student' && <Route path="/speaking/start" element={<SpeakingStart />} />}
-              <Route path="/speaking/view/:id" element={<SpeakingView />} />
             </>
           ) : (
             <>
@@ -176,6 +176,18 @@ function ExamRoute() {
   )
 }
 
+/** Sinov rejimi (ustoz va rahbariyat): imtihonni o'zi topshirib ko'radi, hech narsa saqlanmaydi */
+function PracticeRoute() {
+  const { user } = useAuth()
+  if (!user) return <LoginPage />
+  if (!canEdit(user.role, 'speaking')) return <Navigate to="/speaking" replace />
+  return (
+    <Suspense fallback={null}>
+      <ExamPage practice />
+    </Suspense>
+  )
+}
+
 function Root() {
   const { ready, user } = useAuth()
   // Gapirish imtihoni javoblari: internet qaytganda yoki keyingi kirishda avtomatik yuboriladi
@@ -189,6 +201,7 @@ function Root() {
       <Route path="/apply" element={<ApplyPage />} />
       <Route path="/pay/:code" element={<PayPage />} />
       <Route path="/pay/:code/:status" element={<PayPage />} />
+      <Route path="/exam/practice/:variantId" element={<PracticeRoute />} />
       <Route path="/exam/:attemptId" element={<ExamRoute />} />
       <Route path="/*" element={<Protected />} />
     </Routes>

@@ -146,6 +146,8 @@ export function VariantView() {
   const { id = '' } = useParams()
   const t = useT()
   const nav = useNavigate()
+  const me = useMe()
+  const staffCanPractice = canEdit(me.role, 'speaking')
   const variant = useRows('speaking_variants').find((v) => v.id === id)
   const allItems = useRows('speaking_items')
   const items = useMemo(() => sortItems(allItems.filter((i) => i.variant_id === id)), [allItems, id])
@@ -167,9 +169,16 @@ export function VariantView() {
         title={variant?.title ?? t('nav.speaking')}
         subtitle={t('sp.viewHint')}
         actions={
-          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => nav('/speaking')}>
-            {t('common.back')}
-          </Button>
+          <>
+            <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => nav('/speaking')}>
+              {t('common.back')}
+            </Button>
+            {staffCanPractice && items.length > 0 && (
+              <Button variant="primary" icon={<Play size={15} />} onClick={() => nav(`/exam/practice/${id}`)}>
+                {t('sp.practiceThis')}
+              </Button>
+            )}
+          </>
         }
       />
       {!items.length ? (
@@ -292,6 +301,7 @@ function ResultsList({ attempts }: { attempts: SpeakingAttempt[] }) {
 function StaffHome() {
   const t = useT()
   const me = useMe()
+  const nav = useNavigate()
   const [tab, setTab] = useState<'results' | 'variants'>('results')
   const settings = useSpeakingSettings()
   return (
@@ -302,6 +312,18 @@ function StaffHome() {
           {t('sp.noCriteria')} {canView(me.role, 'settings') && <Link className="link" to="/settings#speaking">{t('nav.settings')}</Link>}
         </div>
       )}
+      <div className="card sp-hero mb">
+        <div className="sp-hero-icon">
+          <Play size={24} weight="fill" />
+        </div>
+        <div className="grow">
+          <h3>{t('sp.practiceTitle')}</h3>
+          <p className="small muted">{t('sp.practiceStaffHint')}</p>
+        </div>
+        <Button variant="primary" icon={<Play size={15} />} onClick={() => nav('/exam/practice/random')}>
+          {t('sp.practiceRandom')}
+        </Button>
+      </div>
       <Tabs
         tabs={[
           { key: 'results', label: t('sp.attempts') },
@@ -450,14 +472,21 @@ function VariantsTab() {
             {
               key: 'act',
               label: '',
-              render: (v) =>
-                editable ? (
-                  <div className="row" onClick={(e) => e.stopPropagation()}>
+              render: (v) => (
+                <div className="row" onClick={(e) => e.stopPropagation()}>
+                  <Button size="sm" variant="ghost" icon={<Eye size={15} />} aria-label={t('sp.viewQuestions')} title={t('sp.viewQuestions')} onClick={() => nav(`/speaking/view/${v.id}`)} />
+                  {qCount(v.id) > 0 && (
+                    <Button size="sm" variant="ghost" icon={<Play size={15} />} aria-label={t('sp.practiceThis')} title={t('sp.practiceThis')} onClick={() => nav(`/exam/practice/${v.id}`)} />
+                  )}
+                  {editable && (
+                  <>
                     <Button size="sm" variant="ghost" icon={<Pencil size={15} />} aria-label={t('common.edit')} onClick={() => nav(`/speaking/variant/${v.id}`)} />
                     <Button size="sm" variant="ghost" icon={<Copy size={15} />} aria-label={t('sp.duplicate')} title={t('sp.duplicate')} disabled={busy} onClick={() => duplicate(v)} />
                     {!aCount(v.id) && <Button size="sm" variant="ghost" icon={<Trash2 size={15} />} aria-label={t('common.delete')} onClick={() => remove(v)} />}
-                  </div>
-                ) : null,
+                  </>
+                  )}
+                </div>
+              ),
             },
           ]}
         />

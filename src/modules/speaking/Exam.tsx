@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2 as CheckCircle, CloudArrowUp, CornersOut, Microphone, SpeakerHigh, WifiSlash } from '@/components/icons'
+import { ArrowsClockwise, CheckCircle2 as CheckCircle, CloudArrowUp, CornersOut, Microphone, SpeakerHigh, WifiSlash, X } from '@/components/icons'
 import { Button } from '@/components/ui'
 import { useMe } from '@/lib/auth'
 import { useRows, useTable } from '@/lib/data'
@@ -15,7 +15,7 @@ import type { SpeakingItem, SpeakingPart } from '@/lib/types'
 import { buildSteps, fmtClock, partStage, remaining, resume, sortItems, type Step } from '@/lib/speaking/timeline'
 import { speakingApi, useSpeakingSettings } from '@/lib/speaking/api'
 import { preloadMedia } from '@/lib/speaking/files'
-import { idb } from '@/lib/speaking/idb'
+import { assemble, idb } from '@/lib/speaking/idb'
 import { AnswerRecorder, audioContext, bell, closeMic, meter, micLive, openMic, audioReady, type Meter } from '@/lib/speaking/recorder'
 import { enqueueUpload, useUploadStatus } from '@/lib/speaking/uploader'
 
@@ -44,8 +44,21 @@ function exitFull() {
   }
 }
 
-export default function ExamPage() {
-  const { attemptId = '' } = useParams()
+/** Sinov rejimidagi javob (faqat shu qurilmada, serverga yuborilmaydi) */
+interface PracticeAnswer {
+  itemId: string
+  url: string
+  seconds: number
+}
+
+/**
+ * practice = ustoz/rahbariyat uchun sinov rejimi: imtihon to'liq o'tadi (taymer, zil, ovoz yozish),
+ * lekin urinish yaratilmaydi, hech narsa serverga yuborilmaydi; oxirida yozilgan javoblarni eshitish mumkin.
+ */
+export default function ExamPage({ practice = false }: { practice?: boolean }) {
+  const params = useParams()
+  const practiceKey = useMemo(() => 'practice-' + Date.now().toString(36), [])
+  const attemptId = practice ? practiceKey : params.attemptId ?? ''
   const me = useMe()
   const t = useT()
   const nav = useNavigate()
@@ -56,8 +69,11 @@ export default function ExamPage() {
   const attemptsQ = useTable('speaking_attempts')
   const itemsQ = useTable('speaking_items')
   const variants = useRows('speaking_variants')
-  const attempt = attemptsQ.data?.find((a) => a.id === attemptId)
-  const variant = variants.find((v) => v.id === attempt?.variant_id)
+  const attempt = practice ? undefined : attemptsQ.data?.find((a) => a.id === attemptId)
+  const [practiceVariant, setPracticeVariant] = useState('')
+  const variant = variants.find((v) => v.id === (practice ? practiceVariant : attempt?.variant_id))
+  const practiceRecs = useRef<{ itemId: string; durationMs: number }[]>([])
+  const [playback, setPlayback] = useState<PracticeAnswer[] | null>(null)
 
   const [phase, setPhase] = useState<Phase>('loading')
   const [error, setError] = useState('')
@@ -95,7 +111,39 @@ export default function ExamPage() {
 
   // 1) Ma'lumot va materiallarni oldindan yuklash (keyin internet uzilsa ham savollar ko'rinadi)
   useEffect(() => {
-    if (exam || phase !== 'loading') return
+    if (exam || phase !== 'loading' || !practice) return
+    if (itemsQ.isError) {
+      setError(t('sp.loadFailed'))
+      setPhase('error')
+      return
+    }
+    if (!itemsQ.isSuccess || itemsQ.isFetching || !variants.length) return
+    const all = itemsQ.data ?? []
+    const want = params.variantId ?? 'random'
+    const pool = variants.filter((v) => (want === 'random' ? v.status === 'published' : v.id === want) && all.some((i) => i.variant_id === v.id))
+    const v = pool[Math.floor(Math.random() * pool.length)]
+    if (!v) {
+      setError(t('sp.noQuestions'))
+      setPhase('error')
+      return
+    }
+    const items = sortItems(all.filter((i) => i.variant_id === v.id))
+    let off = false
+    preloadMedia(items.flatMap((i) => [...(i.images ?? []), i.media_path ?? '']))
+      .catch(() => ({}) as Record<string, string>)
+      .then((urls) => {
+        if (off) return
+        setPracticeVariant(v.id)
+        setExam({ items, steps: buildSteps(items, settings.intro_seconds), urls })
+        setPhase('gate')
+      })
+    return () => {
+      off = true
+    }
+  }, [practice, exam, phase, itemsQ.isSuccess, itemsQ.isError, itemsQ.isFetching, itemsQ.data, variants, params.variantId, settings.intro_seconds, t])
+
+  useEffect(() => {
+    if (exam || phase !== 'loading' || practice) return
     if (attemptsQ.isError || itemsQ.isError) {
       setError(t('sp.loadFailed'))
       setPhase('error')
@@ -130,7 +178,7 @@ export default function ExamPage() {
     return () => {
       off = true
     }
-  }, [exam, phase, attemptsQ.isSuccess, attemptsQ.isError, attemptsQ.isFetching, itemsQ.isSuccess, itemsQ.isError, itemsQ.isFetching, itemsQ.data, attempt, me.student_id, settings.intro_seconds, t])
+  }, [practice, exam, phase, attemptsQ.isSuccess, attemptsQ.isError, attemptsQ.isFetching, itemsQ.isSuccess, itemsQ.isError, itemsQ.isFetching, itemsQ.data, attempt, me.student_id, settings.intro_seconds, t])
 
   const steps = exam?.steps ?? []
   const step: Step | undefined = steps[cur.step]
@@ -138,10 +186,11 @@ export default function ExamPage() {
 
   const persist = useCallback(
     (c: Cur, extra?: { finished?: boolean }) => {
+      if (practice) return
       void idb.putState({ attemptId, userId: me.id, step: c.step, startedAt: c.startedAt, blurs: blurs.current, ...extra }).catch(() => undefined)
       void speakingApi.progress(attemptId, { step: c.step, startedAt: c.startedAt, blurs: blurs.current }).catch(() => undefined)
     },
-    [attemptId, me.id],
+    [attemptId, me.id, practice],
   )
 
   const stopRecorder = useCallback(() => {
@@ -151,10 +200,14 @@ export default function ExamPage() {
     stops.current.push(
       r.rec
         .stop()
-        .then((res) => enqueueUpload({ attemptId, itemId: r.itemId, userId: me.id, mime: res.mime, durationMs: res.durationMs }))
+        .then((res) =>
+          practice
+            ? void practiceRecs.current.push({ itemId: r.itemId, durationMs: res.durationMs })
+            : enqueueUpload({ attemptId, itemId: r.itemId, userId: me.id, mime: res.mime, durationMs: res.durationMs }),
+        )
         .catch(() => undefined),
     )
-  }, [attemptId, me.id])
+  }, [attemptId, me.id, practice])
 
   const finish = useCallback(async () => {
     stopRecorder()
@@ -167,6 +220,17 @@ export default function ExamPage() {
     await Promise.all(stops.current)
     meterRef.current?.close()
     closeMic()
+    if (practice) {
+      // Sinov: yozuvlarni shu qurilmada yig'ib eshittiramiz, xotiradan o'chiramiz
+      const list: PracticeAnswer[] = []
+      for (const r of practiceRecs.current) {
+        const a = await assemble(attemptId, r.itemId).catch(() => null)
+        if (a) list.push({ itemId: r.itemId, url: URL.createObjectURL(a.blob), seconds: Math.round(r.durationMs / 1000) })
+        await idb.deleteChunks(attemptId, r.itemId).catch(() => undefined)
+      }
+      setPlayback(list)
+      return
+    }
     try {
       await speakingApi.submit(attemptId)
       await idb.deleteState(attemptId)
@@ -174,7 +238,7 @@ export default function ExamPage() {
       /* internet yo'q — yuklash navbati keyinroq yakunlaydi */
     }
     qc.invalidateQueries({ queryKey: ['speaking_attempts'] })
-  }, [attemptId, persist, qc, steps.length, stopRecorder])
+  }, [attemptId, persist, qc, steps.length, stopRecorder, practice])
 
   const go = useCallback(
     (next: Cur) => {
@@ -220,6 +284,11 @@ export default function ExamPage() {
     } catch {
       /* ignore */
     }
+    if (practice) {
+      setPhase('running')
+      go({ step: 0, startedAt: Date.now() })
+      return
+    }
     const local = await idb.state(attemptId).catch(() => undefined)
     const server = attempt?.progress?.startedAt ? { step: attempt.progress.step ?? 0, startedAt: attempt.progress.startedAt } : null
     const saved = local && (!server || local.step >= server.step) ? local : server
@@ -233,7 +302,7 @@ export default function ExamPage() {
     setResumed(!!saved && r.step > 0)
     setPhase('running')
     go({ step: r.step, startedAt: r.startedAt })
-  }, [exam, attempt, attemptId, me.id, go])
+  }, [exam, attempt, attemptId, me.id, go, practice])
 
   useEffect(() => {
     if (!resumed) return
@@ -299,7 +368,7 @@ export default function ExamPage() {
 
   // 5) Chiqishdan himoya: orqaga tugmasi, sahifani yopish, ilovadan chiqish (hisoblanadi)
   useEffect(() => {
-    if (phase !== 'running') return
+    if (phase !== 'running' || practice) return
     const before = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       e.returnValue = ''
@@ -323,7 +392,7 @@ export default function ExamPage() {
       document.removeEventListener('visibilitychange', vis)
       document.removeEventListener('fullscreenchange', fs)
     }
-  }, [phase, persist])
+  }, [phase, persist, practice])
 
   // Sahifadan butunlay chiqib ketilsa — yozuvni to'xtatamiz (yozilgani saqlanadi)
   useEffect(
@@ -333,6 +402,23 @@ export default function ExamPage() {
     },
     [],
   )
+  // Sinov rejimidan chiqilganda: qurilmadagi vaqtinchalik yozuvlar o'chiriladi
+  const examRef = useRef(exam)
+  examRef.current = exam
+  const playbackRef = useRef(playback)
+  playbackRef.current = playback
+  useEffect(
+    () => () => {
+      if (!practice) return
+      playbackRef.current?.forEach((p) => URL.revokeObjectURL(p.url))
+      for (const it of examRef.current?.items ?? []) void idb.deleteChunks(attemptId, it.id).catch(() => undefined)
+      exitFull()
+      closeMic()
+    },
+    [practice, attemptId],
+  )
+
+  const leavePractice = () => nav('/speaking', { replace: true })
 
   const setFont = (d: number) =>
     setFontScale((f) => {
@@ -377,14 +463,58 @@ export default function ExamPage() {
             <Microphone size={34} />
           </div>
           <h1>{variant?.title ?? t('nav.speaking')}</h1>
-          <p className="muted">{hasSaved ? t('sp.resumeHint') : t('sp.gateHint')}</p>
+          {practice && <span className="ex-practice">{t('sp.practiceMode')}</span>}
+          <p className="muted">{practice ? t('sp.practiceHint') : hasSaved ? t('sp.resumeHint') : t('sp.gateHint')}</p>
           <Button variant="primary" className="ex-big" onClick={() => void begin()}>
             {hasSaved ? t('sp.resume') : t('sp.startExam')}
           </Button>
+          {practice && (
+            <Button variant="ghost" onClick={leavePractice}>
+              {t('common.back')}
+            </Button>
+          )}
         </div>
       </ExamFrame>
     )
   }
+
+  if (phase === 'finished' && practice)
+    return (
+      <ExamFrame>
+        <div className="ex-center ex-done ex-review">
+          <div className="ex-done-icon">
+            <CheckCircle size={40} weight="fill" />
+          </div>
+          <h1>{t('sp.practiceDone')}</h1>
+          <p className="muted">{t('sp.practiceDoneHint')}</p>
+          {!playback ? (
+            <span className="ex-spinner" />
+          ) : (
+            <div className="ex-playback">
+              {(exam?.items ?? []).map((it, i) => {
+                const pb = playback.find((x) => x.itemId === it.id)
+                return (
+                  <div key={it.id} className="ex-pb">
+                    <div className="ex-pb-q">
+                      <b>{i + 1}.</b> {partTitle(it.part)} — {it.prompt?.trim() || it.bullets.join(' / ') || '—'}
+                    </div>
+                    {pb ? <audio src={pb.url} controls preload="metadata" /> : <span className="small muted">{t('sp.noAnswer')}</span>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          <div className="row-wrap" style={{ justifyContent: 'center' }}>
+            <Button icon={<ArrowsClockwise size={16} />} onClick={() => location.replace('/exam/practice/random')}>
+              {t('sp.practiceAgain')}
+            </Button>
+            <Button variant="primary" onClick={leavePractice}>
+              {t('sp.toHome')}
+            </Button>
+          </div>
+        </div>
+      </ExamFrame>
+    )
 
   if (phase === 'finished')
     return (
@@ -425,12 +555,20 @@ export default function ExamPage() {
           ))}
         </div>
         <div className="ex-status">
-          {!upload.online && (
+          {practice && (
+            <>
+              <span className="ex-chip practice">{t('sp.practiceMode')}</span>
+              <button className="ex-chip btnlike" onClick={leavePractice} aria-label={t('common.close')}>
+                <X size={15} />
+              </button>
+            </>
+          )}
+          {!practice && !upload.online && (
             <span className="ex-chip warn" title={t('sp.offlineSaved')}>
               <WifiSlash size={15} /> {t('sp.offline')}
             </span>
           )}
-          {upload.left > 0 && upload.online && (
+          {!practice && upload.left > 0 && upload.online && (
             <span className="ex-chip">
               <CloudArrowUp size={15} /> {upload.left}
             </span>
